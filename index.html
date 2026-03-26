@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Store Sync Status</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8f9fa;
+    color: #172B4D;
+    padding: 32px;
+  }
+  .dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .header {
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #6B778C;
+  }
+  .updated-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #97A0AF;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .summary-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-box {
+    flex: 1;
+    text-align: center;
+    padding: 14px 8px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .summary-box .num {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .summary-box .label {
+    font-size: 11px;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .num-fresh { color: #006644; }
+  .num-old { color: #FF8B00; }
+  .num-stale { color: #BF2600; }
+  .num-manual { color: #6B778C; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    padding: 8px 8px;
+    border-bottom: 2px solid #DFE1E6;
+    font-weight: 600;
+    color: #6B778C;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  td {
+    padding: 9px 8px;
+    border-bottom: 1px solid #F4F5F7;
+    vertical-align: middle;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status-fresh { background: #E3FCEF; color: #006644; }
+  .status-ok { background: #FFFAE6; color: #FF8B00; }
+  .status-stale { background: #FFEBE6; color: #BF2600; }
+  .status-na { background: #F4F5F7; color: #6B778C; }
+  .days-ago {
+    font-size: 11px;
+    color: #97A0AF;
+  }
+  .owner {
+    font-size: 12px;
+    color: #505F79;
+  }
+  .category-label {
+    padding: 10px 8px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #F4F5F7;
+    background: #FAFBFC;
+  }
+  .legend-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #6B778C;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .edit-hint {
+    font-size: 11px;
+    color: #97A0AF;
+    margin-top: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+  <div class="header">
+    <h1>Test Store Sync Status</h1>
+    <p>How up to date is each area of <strong>olaplex-test.myshopify.com</strong> compared to production</p>
+    <span class="updated-tag" id="updatedTag"></span>
+  </div>
+
+  <div class="summary-row" id="summaryRow"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Sync freshness</h2>
+      <div class="chart-wrap">
+        <canvas id="radarChart"></canvas>
+      </div>
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:#36B37E"></span> Fresh (0 to 7 days)</span>
+        <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (8 to 30 days)</span>
+        <span><span class="legend-dot" style="background:#FF5630"></span> Stale (30+ days)</span>
+        <span><span class="legend-dot" style="background:#B3BAC5"></span> Manual</span>
+      </div>
+      <p class="edit-hint">Outer edge = synced today. Components shrink toward center as days pass.</p>
+    </div>
+
+    <div class="card">
+      <h2>Last sync per component</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Last synced</th>
+            <th>Status</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Data lives in a separate file for easy updates -->
+<script src="data.js"></script>
+
+<script>
+const today = new Date();
+
+function daysSince(dateStr) {
+  if (dateStr === 'manual') return -1;
+  const d = new Date(dateStr);
+  return Math.max(0, Math.floor((today - d) / (1000 * 60 * 60 * 24)));
+}
+
+function freshness(days) {
+  if (days < 0) return 15;
+  if (days <= 0) return 100;
+  if (days >= 90) return 5;
+  return Math.max(5, 100 - (days / 90) * 95);
+}
+
+function statusInfo(days, syncVal) {
+  if (syncVal === 'manual') return { label: 'Manual',      cls: 'status-na',    group: 'manual' };
+  if (days <= 7)            return { label: 'Fresh',       cls: 'status-fresh', group: 'fresh' };
+  if (days <= 30)           return { label: 'Getting old', cls: 'status-ok',    group: 'old' };
+  return                           { label: 'Stale',       cls: 'status-stale', group: 'stale' };
+}
+
+function pointColor(days, syncVal) {
+  if (syncVal === 'manual') return '#B3BAC5';
+  if (days <= 7)  return '#36B37E';
+  if (days <= 30) return '#FFAB00';
+  return '#FF5630';
+}
+
+// Compute all values
+const items = syncData.map(d => {
+  const days = daysSince(d.lastSync);
+  const status = statusInfo(days, d.lastSync);
+  return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync) };
+});
+
+// Summary counters
+const counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
+items.forEach(i => counts[i.status.group]++);
+
+document.getElementById('summaryRow').innerHTML = `
+  <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
+  <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
+  <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
+  <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
+`;
+
+// Most recent sync date for the "last updated" tag
+const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
+const mostRecent = new Date(Math.max(...syncDates));
+document.getElementById('updatedTag').textContent =
+  'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+// Radar chart
+const chartItems = items.filter(d => d.lastSync !== 'n/a');
+const ctx = document.getElementById('radarChart').getContext('2d');
+
+new Chart(ctx, {
+  type: 'radar',
+  data: {
+    labels: chartItems.map(d => d.component),
+    datasets: [{
+      label: 'Sync freshness',
+      data: chartItems.map(d => d.score),
+      fill: true,
+      backgroundColor: 'rgba(54, 179, 126, 0.12)',
+      borderColor: '#36B37E',
+      borderWidth: 2,
+      pointBackgroundColor: chartItems.map(d => d.color),
+      pointBorderColor: chartItems.map(d => d.color),
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      r: {
+        min: 0,
+        max: 100,
+        ticks: { stepSize: 25, display: false },
+        grid: { color: '#EBECF0', lineWidth: 0.8 },
+        angleLines: { color: '#EBECF0', lineWidth: 0.8 },
+        pointLabels: {
+          font: { size: 11, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+          color: '#172B4D',
+        }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const item = chartItems[context.dataIndex];
+            if (item.lastSync === 'manual') return 'Manually configured';
+            if (item.days === 0) return 'Synced today';
+            if (item.days === 1) return '1 day ago';
+            return item.days + ' days ago';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Table
+const tbody = document.getElementById('tableBody');
+let lastCat = '';
+
+items.forEach(item => {
+  if (item.category && item.category !== lastCat) {
+    lastCat = item.category;
+    const catRow = document.createElement('tr');
+    catRow.innerHTML = `<td colspan="4" class="category-label">${item.category}</td>`;
+    tbody.appendChild(catRow);
+  }
+
+  let dateCell = '';
+  if (item.lastSync === 'manual') {
+    dateCell = '<span style="color:#97A0AF">Configure manually</span>';
+  } else {
+    const dateStr = new Date(item.lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const daysText = item.days === 0 ? 'Today' : item.days === 1 ? '1 day ago' : item.days + ' days ago';
+    dateCell = `${dateStr} <span class="days-ago">(${daysText})</span>`;
+  }
+
+  const ownerHtml = item.owner || '<span style="color:#C1C7D0">Unassigned</span>';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><strong>${item.component}</strong></td>
+    <td>${dateCell}</td>
+    <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
+    <td class="owner">${ownerHtml}</td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+
+</body>
+</html>
