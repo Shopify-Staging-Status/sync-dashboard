@@ -7,245 +7,40 @@
   <title>Test Store Sync Status</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f8f9fa;
-      color: #172B4D;
-      padding: 32px;
-    }
-
-    .dashboard {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .header {
-      margin-bottom: 24px;
-    }
-
-    .header h1 {
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .header p {
-      font-size: 14px;
-      color: #6B778C;
-    }
-
-    .updated-tag {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #97A0AF;
-    }
-
-    .source-tag {
-      display: inline-block;
-      margin-left: 12px;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: #E3FCEF;
-      color: #006644;
-    }
-
-    .source-tag.fallback {
-      background: #FFFAE6;
-      color: #FF8B00;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .card h2 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    .chart-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-
-    .summary-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .summary-box {
-      flex: 1;
-      text-align: center;
-      padding: 14px 8px;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .summary-box .num {
-      font-size: 28px;
-      font-weight: 600;
-      line-height: 1.2;
-    }
-
-    .summary-box .label {
-      font-size: 11px;
-      color: #6B778C;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
-
-    .num-fresh {
-      color: #006644;
-    }
-
-    .num-old {
-      color: #FF8B00;
-    }
-
-    .num-stale {
-      color: #BF2600;
-    }
-
-    .num-manual {
-      color: #6B778C;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      text-align: left;
-      padding: 8px 8px;
-      border-bottom: 2px solid #DFE1E6;
-      font-weight: 600;
-      color: #6B778C;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 9px 8px;
-      border-bottom: 1px solid #F4F5F7;
-      vertical-align: middle;
-    }
-
-    .status-pill {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .status-fresh {
-      background: #E3FCEF;
-      color: #006644;
-    }
-
-    .status-ok {
-      background: #FFFAE6;
-      color: #FF8B00;
-    }
-
-    .status-stale {
-      background: #FFEBE6;
-      color: #BF2600;
-    }
-
-    .status-na {
-      background: #F4F5F7;
-      color: #6B778C;
-    }
-
-    .days-ago {
-      font-size: 11px;
-      color: #97A0AF;
-    }
-
-    .owner {
-      font-size: 12px;
-      color: #505F79;
-    }
-
-    .category-label {
-      padding: 10px 8px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #6B778C;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid #F4F5F7;
-      background: #FAFBFC;
-    }
-
-    .legend-row {
-      display: flex;
-      gap: 16px;
-      margin-top: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-      font-size: 12px;
-      color: #6B778C;
-    }
-
-    .legend-dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 4px;
-      vertical-align: middle;
-    }
-
-    .edit-hint {
-      font-size: 11px;
-      color: #97A0AF;
-      margin-top: 12px;
-      text-align: center;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: #97A0AF;
-      font-size: 14px;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; color: #172B4D; padding: 32px; }
+    .dashboard { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 24px; }
+    .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .header p { font-size: 14px; color: #6B778C; }
+    .updated-tag { display: inline-block; margin-top: 8px; font-size: 12px; color: #97A0AF; }
+    .source-tag { display: inline-block; margin-left: 12px; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #E3FCEF; color: #006644; }
+    .source-tag.fallback { background: #FFFAE6; color: #FF8B00; }
+    .grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .chart-wrap { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+    .summary-row { display: flex; gap: 12px; margin-bottom: 24px; }
+    .summary-box { flex: 1; text-align: center; padding: 14px 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .summary-box .num { font-size: 28px; font-weight: 600; line-height: 1.2; }
+    .summary-box .label { font-size: 11px; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .num-fresh { color: #006644; } .num-old { color: #FF8B00; } .num-stale { color: #BF2600; } .num-manual { color: #6B778C; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 8px; border-bottom: 2px solid #DFE1E6; font-weight: 600; color: #6B778C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    td { padding: 9px 8px; border-bottom: 1px solid #F4F5F7; vertical-align: middle; }
+    .status-pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .status-fresh { background: #E3FCEF; color: #006644; }
+    .status-ok { background: #FFFAE6; color: #FF8B00; }
+    .status-stale { background: #FFEBE6; color: #BF2600; }
+    .status-na { background: #F4F5F7; color: #6B778C; }
+    .days-ago { font-size: 11px; color: #97A0AF; }
+    .owner { font-size: 12px; color: #505F79; }
+    .category-label { padding: 10px 8px 6px; font-size: 11px; font-weight: 600; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #F4F5F7; background: #FAFBFC; }
+    .legend-row { display: flex; gap: 16px; margin-top: 16px; justify-content: center; flex-wrap: wrap; font-size: 12px; color: #6B778C; }
+    .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .edit-hint { font-size: 11px; color: #97A0AF; margin-top: 12px; text-align: center; }
+    .loading { text-align: center; padding: 60px 20px; color: #97A0AF; font-size: 14px; }
   </style>
 </head>
 
@@ -271,8 +66,8 @@
         </div>
         <div class="legend-row">
           <span><span class="legend-dot" style="background:#36B37E"></span> Fresh (0 to 19 days)</span>
-          <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (20 to 30 days)</span>
-          <span><span class="legend-dot" style="background:#FF5630"></span> Stale (30+ days)</span>
+          <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (20 to 40 days)</span>
+          <span><span class="legend-dot" style="background:#FF5630"></span> Stale (40+ days)</span>
           <span><span class="legend-dot" style="background:#B3BAC5"></span> Manual</span>
         </div>
         <p class="edit-hint">Outer edge = synced today. Components shrink toward center as days pass.</p>
@@ -307,8 +102,6 @@
     // Option B: Leave SHEET_CSV_URL empty and edit fallbackData directly
     // ============================================================
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQp6Js0GPtthcIdqdAdErJIWhLkO_Wdb6UplLdiyoWVLiN7Z3nQdDd3EQx70VC5q3jJioCaySHp-pYM/pub?gid=0&single=true&output=csv';
-    // Example: 'https://docs.google.com/spreadsheets/d/e/2PACX-XXXXX/pub?gid=0&single=true&output=csv';
-    // Example: 'https://docs.google.com/spreadsheets/d/e/2PACX-XXXXX/pub?gid=0&single=true&output=csv'
 
     // ============================================================
     // FALLBACK DATA (used when no Google Sheets URL is set, or if it fails)
@@ -403,15 +196,15 @@
         return Math.max(5, 100 - (days / 90) * 95);
       }
       function statusInfo(days, val) {
-        if (val === 'manual') return { label: 'Manual', cls: 'status-na', group: 'manual' };
-        if (days <= 19) return { label: 'Fresh', cls: 'status-fresh', group: 'fresh' };
-        if (days >= 20 && days < 40) return { label: 'Getting old', cls: 'status-ok', group: 'old' };
-        return { label: 'Stale', cls: 'status-stale', group: 'stale' };
+        if (val === 'manual') return { label: 'Manual',      cls: 'status-na',    group: 'manual' };
+        if (days < 20)        return { label: 'Fresh',       cls: 'status-fresh', group: 'fresh' };
+        if (days <= 40)       return { label: 'Getting old', cls: 'status-ok',    group: 'old' };
+        return                       { label: 'Stale',       cls: 'status-stale', group: 'stale' };
       }
       function pointColor(days, val) {
         if (val === 'manual') return '#B3BAC5';
-        if (days <= 19) return '#36B37E';
-        if (days >= 20 && days < 40) return '#FFAB00';
+        if (days < 20)        return '#36B37E';
+        if (days <= 40)       return '#FFAB00';
         return '#FF5630';
       }
 
@@ -425,11 +218,11 @@
       const counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
       items.forEach(i => counts[i.status.group]++);
       document.getElementById('summaryRow').innerHTML = `
-    <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
-    <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
-    <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
-    <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
-  `;
+        <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
+        <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
+        <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
+        <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
+      `;
 
       // Most recent date
       const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
@@ -510,11 +303,11 @@
         }
         const tr = document.createElement('tr');
         tr.innerHTML = `
-      <td><strong>${item.component}</strong></td>
-      <td>${dateCell}</td>
-      <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
-      <td class="owner">${item.owner || '<span style="color:#C1C7D0">Unassigned</span>'}</td>
-    `;
+          <td><strong>${item.component}</strong></td>
+          <td>${dateCell}</td>
+          <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
+          <td class="owner">${item.owner || '<span style="color:#C1C7D0">Unassigned</span>'}</td>
+        `;
         tbody.appendChild(tr);
       });
     }
