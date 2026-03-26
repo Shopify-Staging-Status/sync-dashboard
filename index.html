@@ -35,6 +35,19 @@
     font-size: 12px;
     color: #97A0AF;
   }
+  .source-tag {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #E3FCEF;
+    color: #006644;
+  }
+  .source-tag.fallback {
+    background: #FFFAE6;
+    color: #FF8B00;
+  }
   .grid {
     display: grid;
     grid-template-columns: 1fr 1.2fr;
@@ -162,6 +175,12 @@
     margin-top: 12px;
     text-align: center;
   }
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #97A0AF;
+    font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -169,11 +188,14 @@
 <div class="dashboard">
   <div class="header">
     <h1>Test Store Sync Status</h1>
-    <p>How up to date is each area of <strong>test-store</strong> compared to production</p>
+    <p>How up to date is each area of <strong>olaplex-test.myshopify.com</strong> compared to production</p>
     <span class="updated-tag" id="updatedTag"></span>
+    <span class="source-tag" id="sourceTag"></span>
   </div>
 
-  <div class="summary-row" id="summaryRow"></div>
+  <div class="summary-row" id="summaryRow">
+    <div class="loading">Loading sync data...</div>
+  </div>
 
   <div class="grid">
     <div class="card">
@@ -207,149 +229,164 @@
   </div>
 </div>
 
-<!-- Data lives in a separate file for easy updates -->
 <script src="data.js"></script>
-
 <script>
-const today = new Date();
+async function init() {
+  const syncData = await loadSyncData();
+  const isFromSheet = SHEET_CSV_URL && SHEET_CSV_URL !== 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE';
 
-function daysSince(dateStr) {
-  if (dateStr === 'manual') return -1;
-  const d = new Date(dateStr);
-  return Math.max(0, Math.floor((today - d) / (1000 * 60 * 60 * 24)));
-}
+  const sourceTag = document.getElementById('sourceTag');
+  if (isFromSheet) {
+    sourceTag.textContent = 'Live from Google Sheets';
+    sourceTag.classList.remove('fallback');
+  } else {
+    sourceTag.textContent = 'Using local data';
+    sourceTag.classList.add('fallback');
+  }
 
-function freshness(days) {
-  if (days < 0) return 15;
-  if (days <= 0) return 100;
-  if (days >= 90) return 5;
-  return Math.max(5, 100 - (days / 90) * 95);
-}
+  const today = new Date();
 
-function statusInfo(days, syncVal) {
-  if (syncVal === 'manual') return { label: 'Manual',      cls: 'status-na',    group: 'manual' };
-  if (days <= 7)            return { label: 'Fresh',       cls: 'status-fresh', group: 'fresh' };
-  if (days <= 30)           return { label: 'Getting old', cls: 'status-ok',    group: 'old' };
-  return                           { label: 'Stale',       cls: 'status-stale', group: 'stale' };
-}
+  function daysSince(dateStr) {
+    if (dateStr === 'manual') return -1;
+    const d = new Date(dateStr);
+    return Math.max(0, Math.floor((today - d) / (1000 * 60 * 60 * 24)));
+  }
 
-function pointColor(days, syncVal) {
-  if (syncVal === 'manual') return '#B3BAC5';
-  if (days <= 7)  return '#36B37E';
-  if (days <= 30) return '#FFAB00';
-  return '#FF5630';
-}
+  function freshness(days) {
+    if (days < 0) return 15;
+    if (days <= 0) return 100;
+    if (days >= 90) return 5;
+    return Math.max(5, 100 - (days / 90) * 95);
+  }
 
-// Compute all values
-const items = syncData.map(d => {
-  const days = daysSince(d.lastSync);
-  const status = statusInfo(days, d.lastSync);
-  return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync) };
-});
+  function statusInfo(days, syncVal) {
+    if (syncVal === 'manual') return { label: 'Manual',      cls: 'status-na',    group: 'manual' };
+    if (days <= 7)            return { label: 'Fresh',       cls: 'status-fresh', group: 'fresh' };
+    if (days <= 30)           return { label: 'Getting old', cls: 'status-ok',    group: 'old' };
+    return                           { label: 'Stale',       cls: 'status-stale', group: 'stale' };
+  }
 
-// Summary counters
-const counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
-items.forEach(i => counts[i.status.group]++);
+  function pointColor(days, syncVal) {
+    if (syncVal === 'manual') return '#B3BAC5';
+    if (days <= 7)  return '#36B37E';
+    if (days <= 30) return '#FFAB00';
+    return '#FF5630';
+  }
 
-document.getElementById('summaryRow').innerHTML = `
-  <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
-  <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
-  <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
-  <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
-`;
+  const items = syncData.map(d => {
+    const days = daysSince(d.lastSync);
+    const status = statusInfo(days, d.lastSync);
+    return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync) };
+  });
 
-// Most recent sync date for the "last updated" tag
-const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
-const mostRecent = new Date(Math.max(...syncDates));
-document.getElementById('updatedTag').textContent =
-  'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  // Summary
+  const counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
+  items.forEach(i => counts[i.status.group]++);
 
-// Radar chart
-const chartItems = items.filter(d => d.lastSync !== 'n/a');
-const ctx = document.getElementById('radarChart').getContext('2d');
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
+    <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
+    <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
+    <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
+  `;
 
-new Chart(ctx, {
-  type: 'radar',
-  data: {
-    labels: chartItems.map(d => d.component),
-    datasets: [{
-      label: 'Sync freshness',
-      data: chartItems.map(d => d.score),
-      fill: true,
-      backgroundColor: 'rgba(54, 179, 126, 0.12)',
-      borderColor: '#36B37E',
-      borderWidth: 2,
-      pointBackgroundColor: chartItems.map(d => d.color),
-      pointBorderColor: chartItems.map(d => d.color),
-      pointRadius: 5,
-      pointHoverRadius: 7,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: true,
-    scales: {
-      r: {
-        min: 0,
-        max: 100,
-        ticks: { stepSize: 25, display: false },
-        grid: { color: '#EBECF0', lineWidth: 0.8 },
-        angleLines: { color: '#EBECF0', lineWidth: 0.8 },
-        pointLabels: {
-          font: { size: 11, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
-          color: '#172B4D',
-        }
-      }
+  // Most recent sync date
+  const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
+  if (syncDates.length > 0) {
+    const mostRecent = new Date(Math.max(...syncDates));
+    document.getElementById('updatedTag').textContent =
+      'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  // Radar chart
+  const chartItems = items.filter(d => d.lastSync !== 'n/a');
+  const ctx = document.getElementById('radarChart').getContext('2d');
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: chartItems.map(d => d.component),
+      datasets: [{
+        label: 'Sync freshness',
+        data: chartItems.map(d => d.score),
+        fill: true,
+        backgroundColor: 'rgba(54, 179, 126, 0.12)',
+        borderColor: '#36B37E',
+        borderWidth: 2,
+        pointBackgroundColor: chartItems.map(d => d.color),
+        pointBorderColor: chartItems.map(d => d.color),
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
     },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const item = chartItems[context.dataIndex];
-            if (item.lastSync === 'manual') return 'Manually configured';
-            if (item.days === 0) return 'Synced today';
-            if (item.days === 1) return '1 day ago';
-            return item.days + ' days ago';
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          ticks: { stepSize: 25, display: false },
+          grid: { color: '#EBECF0', lineWidth: 0.8 },
+          angleLines: { color: '#EBECF0', lineWidth: 0.8 },
+          pointLabels: {
+            font: { size: 11, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+            color: '#172B4D',
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const item = chartItems[context.dataIndex];
+              if (item.lastSync === 'manual') return 'Manually configured';
+              if (item.days === 0) return 'Synced today';
+              if (item.days === 1) return '1 day ago';
+              return item.days + ' days ago';
+            }
           }
         }
       }
     }
-  }
-});
+  });
 
-// Table
-const tbody = document.getElementById('tableBody');
-let lastCat = '';
+  // Table
+  const tbody = document.getElementById('tableBody');
+  let lastCat = '';
 
-items.forEach(item => {
-  if (item.category && item.category !== lastCat) {
-    lastCat = item.category;
-    const catRow = document.createElement('tr');
-    catRow.innerHTML = `<td colspan="4" class="category-label">${item.category}</td>`;
-    tbody.appendChild(catRow);
-  }
+  items.forEach(item => {
+    if (item.category && item.category !== lastCat) {
+      lastCat = item.category;
+      const catRow = document.createElement('tr');
+      catRow.innerHTML = `<td colspan="4" class="category-label">${item.category}</td>`;
+      tbody.appendChild(catRow);
+    }
 
-  let dateCell = '';
-  if (item.lastSync === 'manual') {
-    dateCell = '<span style="color:#97A0AF">Configure manually</span>';
-  } else {
-    const dateStr = new Date(item.lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const daysText = item.days === 0 ? 'Today' : item.days === 1 ? '1 day ago' : item.days + ' days ago';
-    dateCell = `${dateStr} <span class="days-ago">(${daysText})</span>`;
-  }
+    let dateCell = '';
+    if (item.lastSync === 'manual') {
+      dateCell = '<span style="color:#97A0AF">Configure manually</span>';
+    } else {
+      const dateStr = new Date(item.lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const daysText = item.days === 0 ? 'Today' : item.days === 1 ? '1 day ago' : item.days + ' days ago';
+      dateCell = `${dateStr} <span class="days-ago">(${daysText})</span>`;
+    }
 
-  const ownerHtml = item.owner || '<span style="color:#C1C7D0">Unassigned</span>';
+    const ownerHtml = item.owner || '<span style="color:#C1C7D0">Unassigned</span>';
 
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><strong>${item.component}</strong></td>
-    <td>${dateCell}</td>
-    <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
-    <td class="owner">${ownerHtml}</td>
-  `;
-  tbody.appendChild(tr);
-});
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${item.component}</strong></td>
+      <td>${dateCell}</td>
+      <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
+      <td class="owner">${ownerHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+init();
 </script>
 
 </body>
