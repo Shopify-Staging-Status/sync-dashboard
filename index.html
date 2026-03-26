@@ -270,8 +270,8 @@
           <canvas id="radarChart"></canvas>
         </div>
         <div class="legend-row">
-          <span><span class="legend-dot" style="background:#36B37E"></span> Fresh (0 to 7 days)</span>
-          <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (8 to 30 days)</span>
+          <span><span class="legend-dot" style="background:#36B37E"></span> Fresh (0 to 19 days)</span>
+          <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (20 to 30 days)</span>
           <span><span class="legend-dot" style="background:#FF5630"></span> Stale (30+ days)</span>
           <span><span class="legend-dot" style="background:#B3BAC5"></span> Manual</span>
         </div>
@@ -404,8 +404,8 @@
       }
       function statusInfo(days, val) {
         if (val === 'manual') return { label: 'Manual', cls: 'status-na', group: 'manual' };
-        if (days <= 7) return { label: 'Fresh', cls: 'status-fresh', group: 'fresh' };
-        if (days <= 30) return { label: 'Getting old', cls: 'status-ok', group: 'old' };
+        if (days <= 19) return { label: 'Fresh', cls: 'status-fresh', group: 'fresh' };
+        if (days => 20 & days < 40) return { label: 'Getting old', cls: 'status-ok', group: 'old' };
         return { label: 'Stale', cls: 'status-stale', group: 'stale' };
       }
       function pointColor(days, val) {
