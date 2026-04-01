@@ -296,7 +296,7 @@
         if (item.lastSync === 'manual') {
           dateCell = '<span style="color:#97A0AF">Configure manually</span>';
         } else {
-          const ds = new Date(item.lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const ds = new Date(item.lastSync).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
           const dt = item.days === 0 ? 'Today' : item.days === 1 ? '1 day ago' : item.days + ' days ago';
           dateCell = `${ds} <span class="days-ago">(${dt})</span>`;
         }
