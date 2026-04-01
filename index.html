@@ -142,7 +142,7 @@
         if (!component) continue;
         let lastSync = cols[syncIdx] || 'manual';
         if (lastSync !== 'manual') {
-          const parsed = new Date(lastSync);
+          const parsed = new Date(lastSync.replace(/-/g, '/'));
           if (!isNaN(parsed.getTime())) {
             const y = parsed.getFullYear();
             const m = String(parsed.getMonth() + 1).padStart(2, '0');
@@ -228,8 +228,7 @@
       const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
       if (syncDates.length > 0) {
         const mostRecent = new Date(Math.max(...syncDates));
-        document.getElementById('updatedTag').textContent =
-          'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('updatedTag').textContent = 'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
       }
 
       // Radar
