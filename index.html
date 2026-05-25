@@ -9,18 +9,17 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; color: #172B4D; padding: 32px; }
-    .dashboard { max-width: 1200px; margin: 0 auto; }
+    .dashboard { max-width: 1400px; margin: 0 auto; }
     .header { margin-bottom: 24px; }
     .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 14px; color: #6B778C; }
     .updated-tag { display: inline-block; margin-top: 8px; font-size: 12px; color: #97A0AF; }
     .source-tag { display: inline-block; margin-left: 12px; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #E3FCEF; color: #006644; }
     .source-tag.fallback { background: #FFFAE6; color: #FF8B00; }
-    .grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
     .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
     .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-    .chart-wrap { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+    .chart-wrap { position: relative; width: 100%; max-width: 900px; margin: 0 auto; }
     .summary-row { display: flex; gap: 12px; margin-bottom: 24px; }
     .summary-box { flex: 1; text-align: center; padding: 14px 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
     .summary-box .num { font-size: 28px; font-weight: 600; line-height: 1.2; }
@@ -111,13 +110,13 @@
     // the spreadsheet, and code.gs are never touched.
     // ============================================================
     const DISPLAY_NAMES = {
-      'Metaobjects: Full Routine Section Products Config': 'MO: Full Routine',
+      'Metaobjects: Full Routine Section Products Config': 'MO: Full Routine Config',
       'Metaobjects: Shop the LookSection Variants':       'MO: Shop the Look',
       'Metaobjects: Preferences Quiz Categories':         'MO: Quiz Categories',
       'Metaobjects: Preferences Quiz Questions':          'MO: Quiz Questions',
       'Metaobjects: Preferences Quiz Why We Ask':         'MO: Quiz Why We Ask',
       'Metaobjects: Market selector configuration':       'MO: Market Selector',
-      'Metaobjects: Product Comparison Group':            'MO: prod Comparison',
+      'Metaobjects: Product Comparison Group':            'MO: Product Comparison',
       'Metaobjects: Tutorials - How To Use':              'MO: Tutorials',
       'Metaobjects: Marketing Card':                      'MO: Marketing Card',
       'Metaobjects: Mega Menu Cards':                     'MO: Mega Menu Cards',
@@ -293,7 +292,7 @@
               grid: { color: '#EBECF0', lineWidth: 0.8 },
               angleLines: { color: '#EBECF0', lineWidth: 0.8 },
               pointLabels: {
-                font: { size: 11, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+                font: { size: 13, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
                 color: '#172B4D',
               }
             }
