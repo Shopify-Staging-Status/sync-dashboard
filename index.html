@@ -104,49 +104,56 @@
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQp6Js0GPtthcIdqdAdErJIWhLkO_Wdb6UplLdiyoWVLiN7Z3nQdDd3EQx70VC5q3jJioCaySHp-pYM/pub?gid=0&single=true&output=csv';
 
     // ============================================================
+    // DISPLAY NAMES (optional overrides)
+    // Use this to shorten long component names in the chart and table.
+    // The key must match exactly the "component" value in your data.
+    // Only affects what is shown on screen — the internal name,
+    // the spreadsheet, and code.gs are never touched.
+    // ============================================================
+    const DISPLAY_NAMES = {
+      'Metaobjects: Full Routine Section Products Config': 'MO: Full Routine',
+      'Metaobjects: Shop the LookSection Variants':       'MO: Shop the Look',
+      'Metaobjects: Preferences Quiz Categories':         'MO: Quiz Categories',
+      'Metaobjects: Preferences Quiz Questions':          'MO: Quiz Questions',
+      'Metaobjects: Preferences Quiz Why We Ask':         'MO: Quiz Why We Ask',
+      'Metaobjects: Market selector configuration':       'MO: Market Selector',
+      'Metaobjects: Product Comparison Group':            'MO: prod Comparison',
+      'Metaobjects: Tutorials - How To Use':              'MO: Tutorials',
+      'Metaobjects: Marketing Card':                      'MO: Marketing Card',
+      'Metaobjects: Mega Menu Cards':                     'MO: Mega Menu Cards',
+      'Metaobjects: Featured Article':                    'MO: Featured Article',
+      'Metaobjects: PDP Promo Tout':                      'MO: PDP Promo Tout',
+      'Metaobjects: Collection Banner':                   'MO: Collection Banner',
+      'Metaobjects: Key Ingredients':                     'MO: Key Ingredients',
+      'Metaobjects: Testimonial Group':                   'MO: Testimonial Group',
+      'Metaobjects: Testimonials':                        'MO: Testimonials',
+      'Metaobjects: Before & After':                      'MO: Before & After',
+      'Metaobjects: Product Group':                       'MO: Product Group',
+      'Metaobjects: Blog Filters':                        'MO: Blog Filters',
+    };
+    // ============================================================
+    // END DISPLAY NAMES
+    // ============================================================
+
+    // ============================================================
     // FALLBACK DATA (used when no Google Sheets URL is set, or if it fails)
     // ============================================================
     const fallbackData = [
-  // Shopify CLI
-  { component: 'Theme',                                               lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
-  { component: 'CDN media',                                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
- 
-  // Matrixify
-  { component: 'Products',                                            lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Collections',                                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Pages',                                               lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Blog posts',                                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Navigation menus',                                    lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Metafields',                                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-  { component: 'Discounts',                                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
- 
-  // Metaobjects (cada tipo separado)
-  { component: 'Metaobjects: Marketing Card',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Mega Menu Cards',                        lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Featured Article',                       lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: PDP Promo Tout',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Full Routine Section Products Config',   lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Collection Banner',                      lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Shop the LookSection Variants',         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Key Ingredients',                        lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Testimonial Group',                      lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Preferences Quiz Categories',            lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Preferences Quiz Questions',             lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Preferences Quiz Why We Ask',            lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Blog Filters',                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Product Comparison Group',               lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Market selector configuration',          lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Testimonials',                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Before & After',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Tutorials - How To Use',                 lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
-  { component: 'Metaobjects: Product Group',                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
- 
-  // Manual configuration
-  { component: 'Markets',                                             lastSync: 'manual', owner: '', category: 'Manual configuration' },
-  { component: 'Apps',                                                lastSync: 'manual', owner: '', category: 'Manual configuration' },
-  { component: 'Shipping zones/rates',                                lastSync: 'manual', owner: '', category: 'Manual configuration' },
-  { component: 'Store settings',                                      lastSync: 'manual', owner: '', category: 'Manual configuration' },
-];
+      { component: 'Theme', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
+      { component: 'CDN media', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
+      { component: 'Products', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Collections', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Pages', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Blog posts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Navigation menus', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Metaobjects', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Metafields', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Discounts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Markets', lastSync: 'manual', owner: '', category: 'Manual configuration' },
+      { component: 'Apps', lastSync: 'manual', owner: '', category: 'Manual configuration' },
+      { component: 'Shipping zones/rates', lastSync: 'manual', owner: '', category: 'Manual configuration' },
+      { component: 'Store settings', lastSync: 'manual', owner: '', category: 'Manual configuration' },
+    ];
     // ============================================================
     // END OF CONFIGURATION
     // ============================================================
@@ -236,7 +243,8 @@
       const items = syncData.map(d => {
         const days = daysSince(d.lastSync);
         const status = statusInfo(days, d.lastSync);
-        return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync) };
+        const displayName = DISPLAY_NAMES[d.component] || d.component;
+        return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync), displayName };
       });
 
       // Summary
@@ -261,7 +269,7 @@
       new Chart(ctx, {
         type: 'radar',
         data: {
-          labels: items.map(d => d.component),
+          labels: items.map(d => d.displayName),
           datasets: [{
             label: 'Sync freshness',
             data: items.map(d => d.score),
@@ -327,7 +335,7 @@
         }
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${item.component}</strong></td>
+          <td><strong title="${item.component}">${item.displayName}</strong></td>
           <td>${dateCell}</td>
           <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
           <td class="owner">${item.owner || '<span style="color:#C1C7D0">Unassigned</span>'}</td>
