@@ -107,21 +107,46 @@
     // FALLBACK DATA (used when no Google Sheets URL is set, or if it fails)
     // ============================================================
     const fallbackData = [
-      { component: 'Theme', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
-      { component: 'CDN media', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
-      { component: 'Products', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Collections', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Pages', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Blog posts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Navigation menus', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Metaobjects', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Metafields', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Discounts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Markets', lastSync: 'manual', owner: '', category: 'Manual configuration' },
-      { component: 'Apps', lastSync: 'manual', owner: '', category: 'Manual configuration' },
-      { component: 'Shipping zones/rates', lastSync: 'manual', owner: '', category: 'Manual configuration' },
-      { component: 'Store settings', lastSync: 'manual', owner: '', category: 'Manual configuration' },
-    ];
+  // Shopify CLI
+  { component: 'Theme',                                               lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
+  { component: 'CDN media',                                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
+ 
+  // Matrixify
+  { component: 'Products',                                            lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Collections',                                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Pages',                                               lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Blog posts',                                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Navigation menus',                                    lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Metafields',                                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+  { component: 'Discounts',                                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
+ 
+  // Metaobjects (cada tipo separado)
+  { component: 'Metaobjects: Marketing Card',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Mega Menu Cards',                        lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Featured Article',                       lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: PDP Promo Tout',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Full Routine Section Products Config',   lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Collection Banner',                      lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Shop the LookSection Variants',         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Key Ingredients',                        lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Testimonial Group',                      lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Preferences Quiz Categories',            lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Preferences Quiz Questions',             lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Preferences Quiz Why We Ask',            lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Blog Filters',                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Product Comparison Group',               lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Market selector configuration',          lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Testimonials',                           lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Before & After',                         lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Tutorials - How To Use',                 lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+  { component: 'Metaobjects: Product Group',                          lastSync: '2026-03-20', owner: 'Gersen', category: 'Metaobjects' },
+ 
+  // Manual configuration
+  { component: 'Markets',                                             lastSync: 'manual', owner: '', category: 'Manual configuration' },
+  { component: 'Apps',                                                lastSync: 'manual', owner: '', category: 'Manual configuration' },
+  { component: 'Shipping zones/rates',                                lastSync: 'manual', owner: '', category: 'Manual configuration' },
+  { component: 'Store settings',                                      lastSync: 'manual', owner: '', category: 'Manual configuration' },
+];
     // ============================================================
     // END OF CONFIGURATION
     // ============================================================
