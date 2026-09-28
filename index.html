@@ -5,88 +5,361 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Test Store Sync Status</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; color: #172B4D; padding: 32px; }
-    .dashboard { max-width: 1400px; margin: 0 auto; }
-    .header { margin-bottom: 24px; }
-    .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
-    .header p { font-size: 14px; color: #6B778C; }
-    .updated-tag { display: inline-block; margin-top: 8px; font-size: 12px; color: #97A0AF; }
-    .source-tag { display: inline-block; margin-left: 12px; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #E3FCEF; color: #006644; }
-    .source-tag.fallback { background: #FFFAE6; color: #FF8B00; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
-    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-    .chart-wrap { position: relative; width: 100%; max-width: 900px; margin: 0 auto; }
-    .summary-row { display: flex; gap: 12px; margin-bottom: 24px; }
-    .summary-box { flex: 1; text-align: center; padding: 14px 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .summary-box .num { font-size: 28px; font-weight: 600; line-height: 1.2; }
-    .summary-box .label { font-size: 11px; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-    .num-fresh { color: #006644; } .num-old { color: #FF8B00; } .num-stale { color: #BF2600; } .num-manual { color: #6B778C; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 8px 8px; border-bottom: 2px solid #DFE1E6; font-weight: 600; color: #6B778C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-    td { padding: 9px 8px; border-bottom: 1px solid #F4F5F7; vertical-align: middle; }
-    .status-pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-    .status-fresh { background: #E3FCEF; color: #006644; }
-    .status-ok { background: #FFFAE6; color: #FF8B00; }
-    .status-stale { background: #FFEBE6; color: #BF2600; }
-    .status-na { background: #F4F5F7; color: #6B778C; }
-    .days-ago { font-size: 11px; color: #97A0AF; }
-    .owner { font-size: 12px; color: #505F79; }
-    .category-label { padding: 10px 8px 6px; font-size: 11px; font-weight: 600; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #F4F5F7; background: #FAFBFC; }
-    .legend-row { display: flex; gap: 16px; margin-top: 16px; justify-content: center; flex-wrap: wrap; font-size: 12px; color: #6B778C; }
-    .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
-    .edit-hint { font-size: 11px; color: #97A0AF; margin-top: 12px; text-align: center; }
-    .loading { text-align: center; padding: 60px 20px; color: #97A0AF; font-size: 14px; }
+    :root {
+      --bg: #070707; --panel: #0C0C0C; --card: #101010; --card-2: #141414;
+      --border: #1D1D1D; --border-2: #262626;
+      --text: #EDEDED; --soft: #CFCFCF; --muted: #8A8A8A;
+      --fresh: #C8F547; --old: #F5A524; --stale: #F2545B; --manual: #6E6E6E;
+      --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); }
+    body { color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    button { font: inherit; color: inherit; }
+    a { color: var(--fresh); }
+    :focus-visible { outline: 1px solid rgba(255, 255, 255, 0.75); outline-offset: 2px; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* ---------- Top bar ---------- */
+    .app { max-width: 1500px; margin: 0 auto; padding: 12px 24px 32px; }
+    .topbar { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--fresh); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .mark svg { animation: rot 8s linear infinite; }
+    .brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+    .sep { width: 1px; height: 18px; background: var(--border-2); }
+    .crumb { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .crumb .cur { color: var(--text); }
+    .crumb .arrow { position: relative; width: 34px; height: 14px; overflow: hidden; }
+    .crumb .arrow::before { content: ''; position: absolute; left: 0; right: 4px; top: 6.5px; height: 1px; background: #3A3A3A; }
+    .crumb .arrow::after { content: ''; position: absolute; top: 5px; left: -6px; width: 6px; height: 4px; border-radius: 2px; background: var(--fresh); box-shadow: 0 0 6px var(--fresh); animation: travel 1.8s ease-in-out infinite; }
+    .crumb .arrow svg { position: absolute; right: 0; top: 0; }
+    .tools { display: flex; align-items: center; gap: 10px; }
+    .search { position: relative; width: 280px; height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid #222; border-radius: 10px; color: var(--muted); }
+    .search:focus-within { border-color: #3A3A3A; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06); }
+    .search input { flex: 1; min-width: 0; height: 100%; background: transparent; border: 0; outline: none; color: var(--text); font: inherit; font-size: 13px; }
+    .search input::placeholder { color: #858585; }
+    .btn { height: 40px; padding: 0 14px; display: flex; align-items: center; gap: 8px; background: var(--card-2); border: 1px solid var(--border-2); border-radius: 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { background: #1A1A1A; }
+    .btn[disabled] { cursor: progress; }
+    .btn[disabled] svg { animation: rot 0.9s linear infinite; }
+
+    /* ---------- Stage card ---------- */
+    .stage-card { margin-top: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .stage-head { position: relative; min-height: 76px; padding: 14px 24px 14px 28px; display: flex; align-items: center; justify-content: space-between; gap: 14px 24px; flex-wrap: wrap; border-bottom: 1px solid #191919; }
+    .live-bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; overflow: hidden; }
+    .live-bar i { display: block; height: 100%; background: linear-gradient(90deg, rgba(200, 245, 71, 0), rgba(200, 245, 71, 0.7)); transform-origin: 0 50%; transform: scaleX(0); }
+    .title-row { display: flex; align-items: center; gap: 10px; }
+    h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+    .pulse { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--fresh); flex-shrink: 0; }
+    .pulse::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--fresh); animation: ripple 2s ease-out infinite; }
+    .subline { margin-top: 5px; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+    .source { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 11px; border: 1px solid; white-space: nowrap; }
+    .source::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: blink 1.6s ease-in-out infinite; }
+    .source.live { color: var(--fresh); border-color: rgba(200, 245, 71, 0.3); background: rgba(200, 245, 71, 0.06); }
+    .source.local { color: var(--old); border-color: rgba(245, 165, 36, 0.3); background: rgba(245, 165, 36, 0.06); }
+    .ago { font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .seg { display: flex; gap: 2px; padding: 3px; height: 40px; background: var(--card); border: 1px solid #222; border-radius: 11px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .seg button { height: 32px; padding: 0 12px; display: flex; align-items: center; gap: 7px; border: 0; border-radius: 8px; background: transparent; color: #9A9A9A; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+    .seg button:hover { color: var(--text); }
+    .seg button[aria-pressed="true"] { background: #1E1E1E; color: #F2F2F2; }
+    .seg .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .seg .n { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .seg button[aria-pressed="true"] .n { color: var(--fresh); }
+    .stage-wrap { padding: 24px; }
+    .host { width: 100%; }
+    .fit { position: relative; margin: 0 auto; overflow: hidden; }
+    .stage { position: absolute; left: 0; top: 0; width: 1400px; transform-origin: 0 0; }
+    .loading { padding: 90px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+    .foot { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; font-size: 12px; color: var(--muted); }
+    .foot span { display: inline-flex; align-items: center; gap: 7px; }
+    .foot i { width: 12px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+    .foot i.dash { background: repeating-linear-gradient(90deg, var(--fresh) 0 3px, transparent 3px 5px); }
+
+    /* ---------- Globe (sphere + sync ring) ---------- */
+    .globe { position: relative; flex-shrink: 0; }
+    .globe::before { content: ''; position: absolute; inset: -30px; border-radius: 50%; background: radial-gradient(circle, rgba(200, 245, 71, 0.07) 0%, rgba(200, 245, 71, 0) 60%); animation: breathe 4.5s ease-in-out infinite; }
+    .gring { position: absolute; left: 0; top: 0; overflow: visible; }
+    .sweep { animation: rot 6s linear infinite; }
+    .sphere-wrap { position: absolute; inset: 0; perspective: 420px; }
+    .sphere { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; animation: spin 40s linear infinite; }
+    .sphere i { position: absolute; left: -1px; top: -1px; width: 2px; height: 2px; border-radius: 50%; background: #D9D9D9; }
+    .sphere i.lit { background: var(--fresh); }
+    .sphere i.tw { animation: twinkle 2.8s ease-in-out infinite; }
+    .seg-in { animation: ringIn 1s cubic-bezier(0.3, 0.7, 0.3, 1) backwards; }
+
+    /* ---------- Map: left column ---------- */
+    .left { position: absolute; left: 0; width: 300px; display: flex; flex-direction: column; align-items: center; }
+    .left-title { height: 40px; text-align: center; }
+    .lt1 { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+    .lt2 { margin-top: 3px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .big { margin-top: 18px; display: flex; align-items: baseline; gap: 2px; line-height: 1; }
+    .big .pct { font-size: 56px; font-weight: 600; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+    .big .pc { font-size: 24px; font-weight: 500; color: var(--muted); }
+    .big-lab { margin-top: 6px; font-size: 13.5px; color: var(--soft); }
+    .big-sub { margin-top: 8px; max-width: 250px; text-align: center; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+    .legend { margin-top: 16px; width: 264px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .legend div { height: 30px; padding: 0 9px; display: flex; align-items: center; gap: 8px; background: #111; border: 1px solid #1F1F1F; border-radius: 8px; font-size: 12px; color: var(--soft); white-space: nowrap; }
+    .legend div.span2 { grid-column: span 2; }
+    .legend i { width: 12px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+    .legend b { margin-left: auto; font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--text); }
+    .cover { margin-top: 14px; width: 264px; }
+    .cover-top { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+    .cover-top b { font-family: var(--mono); font-weight: 500; color: var(--soft); }
+    .cover-track { margin-top: 7px; height: 4px; border-radius: 2px; background: #1F1F1F; overflow: hidden; }
+    .cover-track i { display: block; height: 100%; border-radius: 2px; background: #BDBDBD; transform-origin: 0 50%; }
+    .ticker { margin-top: 14px; width: 264px; height: 34px; padding-top: 12px; border-top: 1px solid #1A1A1A; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--muted); }
+    .tk-lab { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .tk-lab i { width: 5px; height: 5px; border-radius: 50%; background: var(--fresh); animation: blink 1.6s ease-in-out infinite; }
+    .tk-line { min-width: 0; display: inline-flex; gap: 6px; white-space: nowrap; overflow: hidden; }
+    .tk-line b { font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+
+    /* ---------- Map: lines and pulses ---------- */
+    .lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+    .lines path { fill: none; }
+    .sl { stroke: #FFFFFF; stroke-opacity: 0.14; stroke-width: 1; transition: stroke-opacity 0.2s; }
+    .sl.on { stroke: var(--fresh); stroke-opacity: 0.75; stroke-width: 1.3; }
+    .ln { stroke-opacity: 0.34; stroke-width: 1; transition: stroke-opacity 0.2s; }
+    .ln.dim { stroke-opacity: 0.06; }
+    .ln.hi { stroke-opacity: 1; stroke-width: 1.8; }
+    .fl { stroke-dasharray: 1.5 16; stroke-linecap: round; stroke-width: 1.5; stroke-opacity: 0.9; animation: flow 2.2s linear infinite; }
+    .fl.dim { display: none; }
+    .node { fill: #5A5A5A; transition: fill 0.2s; }
+    .node.on { fill: var(--fresh); }
+    .flow-canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+    .col-head { position: absolute; display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+    .col-head .lt1 { font-size: 15px; }
+    .wave { position: absolute; inset: 3px; border-radius: 50%; border: 1px solid rgba(200, 245, 71, 0.45); opacity: 0; animation: wave 3.6s ease-out infinite; pointer-events: none; }
+
+    /* ---------- Map: category cards ---------- */
+    .cat { position: absolute; width: 256px; height: 80px; padding: 12px 12px 12px 14px; display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid #222; border-radius: 14px; text-align: left; cursor: pointer; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; }
+    .cat:hover { border-color: #343434; }
+    .cat[aria-pressed="true"] { background: #14170D; border-color: rgba(200, 245, 71, 0.55); box-shadow: 0 0 0 4px rgba(200, 245, 71, 0.06); }
+    .cat.flash { border-color: rgba(200, 245, 71, 0.4); }
+    .cat-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+    .cat-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .ico { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: #1C1C1C; color: #A3A3A3; flex-shrink: 0; }
+    .cat[aria-pressed="true"] .ico { background: var(--fresh); color: #0B0B0B; }
+    .cat-lab { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-bot { display: flex; align-items: baseline; gap: 6px; }
+    .cat-cnt { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .cat-unit { font-size: 11.5px; color: var(--muted); }
+    .ring { position: relative; width: 40px; height: 40px; flex-shrink: 0; }
+    .ring svg { position: absolute; inset: 0; }
+    .ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9.5px; color: #BDBDBD; }
+
+    /* ---------- Map: component rows ---------- */
+    .row { position: absolute; height: 22px; padding: 0 8px 0 0; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 6px; background: transparent; color: var(--soft); white-space: nowrap; text-align: left; cursor: pointer; transition: opacity 0.2s, background-color 0.15s; }
+    .pt { position: relative; width: 10px; height: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pt i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); transition: width 0.15s, height 0.15s, box-shadow 0.15s; }
+    .pt::after { content: ''; position: absolute; inset: 1px; border-radius: 50%; border: 1px solid var(--c); opacity: 0; pointer-events: none; }
+    .pt.ping::after { animation: ripple 0.9s ease-out; }
+    .row.sel .pt::after { animation: ripple 2.2s ease-out infinite; }
+    .pt.ping i { animation: pop 0.6s ease-out; }
+    .row .nm { max-width: 176px; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+    .row.hi { background: rgba(255, 255, 255, 0.05); }
+    .row.hi .nm { color: #FFFFFF; }
+    .row.hi .pt i { width: 8px; height: 8px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 22%, transparent); }
+    .row.sel .nm { font-weight: 500; }
+    .row.dim { opacity: 0.26; }
+    .badge { height: 18px; padding: 0 7px; display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: #161616; border: 1px solid var(--border-2); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #9A9A9A; flex-shrink: 0; }
+    .badge b { font-weight: 500; color: var(--c); }
+    .meter { position: relative; width: 40px; height: 4px; border-radius: 2px; background: #1F1F1F; overflow: hidden; flex-shrink: 0; }
+    .meter i { display: block; height: 100%; border-radius: 2px; background: var(--c); transform-origin: 0 50%; }
+    .meter.live::after { content: ''; position: absolute; top: 0; bottom: 0; width: 14px; left: -14px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0)); animation: shimmer 3.2s ease-in-out infinite; animation-delay: var(--d, 0s); }
+    .av { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 600; letter-spacing: 0.02em; background: #1C1C1C; border: 1px solid #2A2A2A; color: #BDBDBD; flex-shrink: 0; }
+    .av.none { background: transparent; border-style: dashed; border-color: #3A3A3A; }
+
+    /* ---------- Detail panel ---------- */
+    .detail { position: absolute; padding: 20px; background: var(--card); border: 1px solid #1F1F1F; border-radius: 14px; display: flex; flex-direction: column; gap: 18px; overflow: auto; }
+    .detail > * { animation: rise 0.35s ease-out backwards; }
+    .detail > *:nth-child(2) { animation-delay: 0.04s; } .detail > *:nth-child(3) { animation-delay: 0.08s; }
+    .detail > *:nth-child(4) { animation-delay: 0.12s; } .detail > *:nth-child(5) { animation-delay: 0.16s; }
+    .detail > *:nth-child(6) { animation-delay: 0.2s; } .detail > *:nth-child(7) { animation-delay: 0.24s; }
+    .cap { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .d-name { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+    .d-full { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { height: 24px; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #181818; border: 1px solid var(--border-2); font-size: 11.5px; color: var(--soft); }
+    .chip i { width: 6px; height: 6px; border-radius: 50%; }
+    .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #1F1F1F; border: 1px solid #1F1F1F; border-radius: 10px; overflow: hidden; }
+    .stats > div { background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .stats .wide { grid-column: span 2; }
+    .stats span { font-size: 11px; color: var(--muted); }
+    .stats strong { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stats em { font-style: normal; font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
+    .sec { display: flex; flex-direction: column; gap: 10px; }
+    .sec-t { font-size: 12px; font-weight: 500; color: var(--text); }
+    .sec p { font-size: 12.5px; line-height: 1.5; color: var(--soft); }
+    .tl-track { position: relative; height: 8px; border-radius: 4px; background: #1A1A1A; }
+    .tl-track .z { position: absolute; top: 0; height: 8px; }
+    .tl-track .mk { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: #FFFFFF; box-shadow: 0 0 0 3px var(--card); animation: slideIn 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) backwards, glow 2.4s ease-in-out 0.9s infinite; }
+    .tl-lab { position: relative; height: 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+    .tl-lab span { position: absolute; top: 0; white-space: nowrap; }
+    .mix { height: 6px; display: flex; gap: 2px; border-radius: 3px; overflow: hidden; }
+    .mix i { height: 100%; }
+    .mix-lab { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+    .mix-lab b { font-family: var(--mono); font-weight: 500; color: var(--soft); }
+    .d-link { margin-top: auto; height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #2A2A2A; border-radius: 10px; color: var(--text); text-decoration: none; font-size: 13px; }
+    .d-link:hover { background: #161616; }
+    .empty-msg { font-size: 12.5px; color: var(--muted); }
+
+    /* ---------- List mode (narrow screens) ---------- */
+    .lm { display: flex; flex-direction: column; gap: 18px; }
+    .lm-hero { display: flex; align-items: center; justify-content: center; gap: 20px 28px; flex-wrap: wrap; padding: 8px 0 4px; }
+    .lm-hero .hero-txt { display: flex; flex-direction: column; align-items: flex-start; }
+    .lm-hero .big { margin-top: 0; }
+    .lm-hero .big-sub { text-align: left; }
+    .lm-hero .legend { margin-top: 12px; }
+    .lm-group { border: 1px solid #1F1F1F; border-radius: 12px; background: #0F0F0F; overflow: hidden; }
+    .lm-gh { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #1A1A1A; }
+    .lm-gh .cat-lab { flex: 1; }
+    .lm-gh .cat-unit { white-space: nowrap; }
+    .lrow { width: 100%; min-height: 46px; padding: 8px 14px; display: flex; align-items: center; gap: 10px; background: transparent; border: 0; border-bottom: 1px solid #161616; text-align: left; cursor: pointer; }
+    .lrow:last-child { border-bottom: 0; }
+    .lrow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--soft); }
+    .lrow[aria-expanded="true"] { background: rgba(255, 255, 255, 0.04); }
+    .lrow[aria-expanded="true"] .nm { color: #FFFFFF; }
+    .lm-detail { padding: 16px 14px 18px; border-bottom: 1px solid #161616; background: #0B0B0B; display: flex; flex-direction: column; gap: 16px; }
+    .lm-none { padding: 30px 10px; text-align: center; }
+    [hidden] { display: none !important; }
+
+    @keyframes spin { from { transform: rotateX(-14deg) rotateY(0deg); } to { transform: rotateX(-14deg) rotateY(360deg); } }
+    @keyframes flow { to { stroke-dashoffset: -35; } }
+    @keyframes rot { to { transform: rotate(360deg); } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @keyframes ripple { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.8); opacity: 0; } }
+    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.8); } 100% { transform: scale(1); } }
+    @keyframes twinkle { 0%, 100% { opacity: 0.95; } 50% { opacity: 0.2; } }
+    @keyframes breathe { 0%, 100% { opacity: 0.6; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.03); } }
+    @keyframes ringIn { from { stroke-dasharray: 0 var(--C); } }
+    @keyframes shimmer { 0%, 55% { left: -14px; } 100% { left: 100%; } }
+    @keyframes travel { 0% { left: -6px; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { left: 30px; opacity: 0; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+    @keyframes slideIn { from { left: 0; } }
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 0 3px var(--card); } 50% { box-shadow: 0 0 0 3px var(--card), 0 0 10px 2px rgba(255, 255, 255, 0.5); } }
+    @keyframes grow { from { transform: scaleX(0); } }
+
+    /* ---------- Automation savings row ---------- */
+    .savings { border-bottom: 1px solid #191919; }
+    .sav-row { width: 100%; min-height: 66px; padding: 12px 24px 12px 28px; display: flex; align-items: center; gap: 16px; background: transparent; border: 0; text-align: left; cursor: pointer; }
+    .sav-row:hover { background: rgba(255, 255, 255, 0.025); }
+    .sav-ico { position: relative; width: 34px; height: 34px; border-radius: 9px; background: rgba(200, 245, 71, 0.1); border: 1px solid rgba(200, 245, 71, 0.35); color: var(--fresh); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sav-ico::after { content: ''; position: absolute; inset: -1px; border-radius: 9px; border: 1px solid var(--fresh); opacity: 0; animation: savGlow 2.8s ease-out infinite; }
+    .sav-main { display: flex; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; min-width: 0; }
+    .sav-num { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .sav-num small { font-size: 15px; font-weight: 500; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
+    .sav-lab { font-size: 14px; color: var(--soft); }
+    .sav-meta { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+    .sav-more { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-2); font-size: 12.5px; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+    .sav-more svg { transition: transform 0.2s; }
+    .sav-row[aria-expanded="true"] .sav-more svg { transform: rotate(180deg); }
+    .sav-panel { padding: 6px 24px 24px 28px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+    .sav-panel > * { animation: rise 0.35s ease-out backwards; }
+    .sav-panel > *:nth-child(2) { animation-delay: 0.08s; }
+    .sav-h { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+    .sav-item { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 6px 14px; align-items: start; padding: 12px 0; border-bottom: 1px solid #171717; }
+    .sav-item:last-child { border-bottom: 0; }
+    .sav-item .sw { width: 12px; height: 4px; border-radius: 2px; margin-top: 7px; }
+    .sav-item .t { font-size: 13px; color: var(--text); }
+    .sav-item .d { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+    .sav-item .f { margin-top: 7px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-family: var(--mono); font-size: 11.5px; color: var(--soft); }
+    .sav-item .m { font-family: var(--mono); font-size: 13px; text-align: right; white-space: nowrap; }
+    .sav-item .m span { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .tag { height: 19px; padding: 0 7px; border-radius: 999px; font-family: var(--sans); font-size: 10.5px; display: inline-flex; align-items: center; border: 1px solid; white-space: nowrap; }
+    .tag.sheet { color: var(--fresh); border-color: rgba(200, 245, 71, 0.3); background: rgba(200, 245, 71, 0.05); }
+    .tag.est { color: #A3A3A3; border-color: #2E2E2E; }
+    .sav-sum { background: var(--card); border: 1px solid #1F1F1F; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 11px; }
+    .sum-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--muted); }
+    .sum-row b { font-family: var(--mono); font-weight: 500; color: var(--text); white-space: nowrap; }
+    .sum-row.total { padding-top: 11px; border-top: 1px solid #1F1F1F; font-size: 13px; color: var(--text); }
+    .sum-row.total b { font-size: 15px; color: var(--fresh); }
+    .sav-bar { height: 8px; display: flex; gap: 2px; border-radius: 4px; overflow: hidden; }
+    .sav-bar i { height: 100%; transform-origin: 0 50%; animation: grow 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) 0.1s backwards; }
+    .sav-note { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+    .sav-note code { font-family: var(--mono); font-size: 11px; color: var(--soft); }
+    @keyframes savGlow { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.45); opacity: 0; } }
+    @media (max-width: 980px) {
+      .sav-panel { grid-template-columns: 1fr; }
+      .sav-meta { display: none; }
+    }
+    @media (max-width: 760px) {
+      .sav-row { padding: 12px 16px; flex-wrap: wrap; }
+      .sav-main { flex: 1 1 200px; }
+      .sav-more { margin-left: 50px; }
+      .sav-panel { padding: 6px 16px 20px; }
+    }
+    @keyframes liveBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes wave { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(1.32); opacity: 0; } }
+    html.no-motion *, html.no-motion *::before, html.no-motion *::after { animation: none !important; transition: none !important; }
+    .btn[aria-pressed="true"] .motion-dot { background: var(--fresh); box-shadow: 0 0 6px var(--fresh); }
+    .motion-dot { width: 7px; height: 7px; border-radius: 50%; background: #4A4A4A; }
+    @media (max-width: 760px) {
+      .app { padding: 8px 12px 24px; }
+      .topbar { flex-wrap: wrap; padding: 6px 0 10px; }
+      .sep, .crumb { display: none; }
+      .tools { width: 100%; }
+      .search { flex: 1; width: auto; }
+      #motionTxt { display: none; }
+      #motionBtn { padding: 0 14px; }
+      .stage-head { padding: 14px 16px; }
+      .stage-wrap { padding: 14px; }
+    }
   </style>
 </head>
 
 <body>
-
-  <div class="dashboard">
-    <div class="header">
-      <h1>Test Store Sync Status</h1>
-      <p>How up to date is each area of <strong>test-store</strong> compared to production</p>
-      <span class="updated-tag" id="updatedTag"></span>
-      <span class="source-tag" id="sourceTag"></span>
-    </div>
-
-    <div class="summary-row" id="summaryRow">
-      <div class="loading">Loading sync data...</div>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <h2>Sync freshness</h2>
-        <div class="chart-wrap">
-          <canvas id="radarChart"></canvas>
-        </div>
-        <div class="legend-row">
-          <span><span class="legend-dot" style="background:#36B37E"></span> Fresh (0 to 19 days)</span>
-          <span><span class="legend-dot" style="background:#FFAB00"></span> Getting old (20 to 40 days)</span>
-          <span><span class="legend-dot" style="background:#FF5630"></span> Stale (40+ days)</span>
-          <span><span class="legend-dot" style="background:#B3BAC5"></span> Manual</span>
-        </div>
-        <p class="edit-hint">Outer edge = synced today. Components shrink toward center as days pass.</p>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0B0B0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M18 3v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M6 21v-4h4"/></svg>
+        </span>
+        <span class="brand-name">Test Store Sync</span>
+        <span class="sep"></span>
+        <nav class="crumb" aria-label="Sync direction">
+          <span>production</span>
+          <span class="arrow" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="#6A6A6A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3l4 4-4 4"/></svg></span>
+          <span class="cur">test-store</span>
+        </nav>
       </div>
-
-      <div class="card">
-        <h2>Last sync per component</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Component</th>
-              <th>Last synced</th>
-              <th>Status</th>
-              <th>Owner</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+      <div class="tools">
+        <label class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <span class="sr">Search components</span>
+          <input id="q" type="text" placeholder="Search components" autocomplete="off" spellcheck="false">
+        </label>
+        <button type="button" class="btn" id="motionBtn" aria-pressed="true" title="Turn the live animations on or off">
+          <span class="motion-dot" aria-hidden="true"></span><span id="motionTxt">Animations on</span>
+        </button>
+        <button type="button" class="btn" id="refreshBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+          <span id="refreshTxt">Refresh</span>
+        </button>
       </div>
-    </div>
+    </header>
+
+    <main class="stage-card">
+      <div class="stage-head">
+        <div>
+          <div class="title-row"><span class="pulse" aria-hidden="true"></span><h1>Test Store Sync Status</h1></div>
+          <p class="subline" id="subline">How up to date each area of test-store is compared to production</p>
+        </div>
+        <div class="seg" role="group" aria-label="Filter by status" id="filters"></div>
+        <div class="live-bar" aria-hidden="true"><i id="liveBar"></i></div>
+      </div>
+      <div class="savings" id="savings" hidden></div>
+      <div class="stage-wrap">
+        <div class="host" id="host"><div class="loading">Loading sync data…</div></div>
+      </div>
+    </main>
+
+    <div class="foot" id="foot"></div>
   </div>
 
   <script>
@@ -102,11 +375,14 @@
     // ============================================================
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQp6Js0GPtthcIdqdAdErJIWhLkO_Wdb6UplLdiyoWVLiN7Z3nQdDd3EQx70VC5q3jJioCaySHp-pYM/pub?gid=0&single=true&output=csv';
 
+    // Reads the sheet again every N minutes while the page is open (0 = off).
+    const AUTO_REFRESH_MINUTES = 5;
+
     // ============================================================
     // DISPLAY NAMES (optional overrides)
-    // Use this to shorten long component names in the chart and table.
+    // Use this to shorten long component names in the map and list.
     // The key must match exactly the "component" value in your data.
-    // Only affects what is shown on screen — the internal name,
+    // Only affects what is shown on screen: the internal name,
     // the spreadsheet, and code.gs are never touched.
     // ============================================================
     const DISPLAY_NAMES = {
@@ -133,20 +409,87 @@
     // ============================================================
 
     // ============================================================
+    // CATEGORY OVERRIDES (optional, display only)
+    // Rename a category that comes from the sheet, or move a single
+    // component to another category. The spreadsheet is not touched.
+    // ============================================================
+    const CATEGORY_RENAMES = {
+      'Matrixify': 'Automation',
+      'Metaobjects': 'Automation', // metaobjects are synced by Matrixify too
+    };
+    const COMPONENT_CATEGORY = {
+      'CDN media': 'Automation', // Matrixify uploads the CDN media as well
+    };
+
+    // ============================================================
+    // UPDATE WINDOWS (days since the last sync)
+    //   freshUnder: Fresh while days < freshUnder
+    //   staleAfter: Getting old up to staleAfter, Stale after it
+    //   scaleMax:   right end of the "Sync age" bar and of the freshness score
+    // ============================================================
+    const WINDOWS = {
+      standard:  { freshUnder: 20,  staleAfter: 40,  scaleMax: 90 },
+      sixMonths: { freshUnder: 150, staleAfter: 180, scaleMax: 300 },
+    };
+    // These manual settings only go stale after 6 months.
+    // While their "Last Synced" cell says "manual" (no date yet) they count as Fresh.
+    // Put the date of the last manual check in the sheet to start their 6-month clock.
+    const SIX_MONTH_COMPONENTS = ['Markets', 'Apps', 'Shipping zones/rates', 'Store settings'];
+
+    // ============================================================
+    // AUTOMATION SAVINGS (estimate of the human work the automation saves)
+    // The two component counts come from the sheet on every load.
+    // Every other number is an estimate: replace it with your team's real numbers.
+    // Clicking the savings line on the page shows each number and how it is used.
+    // ============================================================
+    const AUTOMATION_SAVINGS = {
+      automationOwner: 'Auto Sync',     // rows whose Owner contains this text are synced by the automation
+      runsPerMonth: 4,                  // estimate: how often someone would sync by hand to keep test-store this fresh
+      minutesPerComponent: 15,          // estimate: export in production, download, import in test-store, check it
+      scriptsPerRun: 4,                 // estimate: scripts written or adapted by hand on each sync
+      minutesPerScript: 45,             // estimate
+      importExportErrorsPerRun: 12,     // estimate: errors that show up in exports and imports on each sync
+      minutesPerError: 5,               // estimate: open, read and retry one error
+      errorsNeedingFixPerRun: 4,        // estimate: errors that only go away after someone fixes the data
+      minutesPerFix: 20,                // estimate
+      // Imports that point to files (images, documents) and fail if the files are not in test-store yet.
+      // The automation uploads the CDN media first, so these imports go through on the first try.
+      fileDependentComponents: ['Metaobjects', 'Metafields', 'Products', 'Collections', 'Blog posts', 'Pages'],
+      minutesPerFileDependency: 10,     // estimate: upload the missing files, fix references, re-run one import
+    };
+
+    // ============================================================
     // FALLBACK DATA (used when no Google Sheets URL is set, or if it fails)
+    // Snapshot of the sheet taken on 2026-09-28.
     // ============================================================
     const fallbackData = [
-      { component: 'Theme', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
-      { component: 'CDN media', lastSync: '2026-03-20', owner: 'Gersen', category: 'Shopify CLI' },
-      { component: 'Products', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Collections', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Pages', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Blog posts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Navigation menus', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Metaobjects', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Metafields', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Discounts', lastSync: '2026-03-20', owner: 'Gersen', category: 'Matrixify' },
-      { component: 'Markets', lastSync: 'manual', owner: '', category: 'Manual configuration' },
+      { component: 'Theme', lastSync: '2026-08-04', owner: 'Gersen', category: 'Shopify CLI' },
+      { component: 'CDN media', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Matrixify' },
+      { component: 'Products', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Matrixify' },
+      { component: 'Collections', lastSync: '2026-05-05', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Pages', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Matrixify' },
+      { component: 'Blog posts', lastSync: '2026-09-23', owner: 'Matrixify Auto Sync', category: 'Matrixify' },
+      { component: 'Navigation menus', lastSync: '2026-03-18', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Metafields', lastSync: '2026-03-18', owner: 'Gersen', category: 'Matrixify' },
+      { component: 'Discounts', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Matrixify' },
+      { component: 'Metaobjects: Marketing Card', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Mega Menu Cards', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Featured Article', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: PDP Promo Tout', lastSync: '2026-09-26', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Full Routine Section Products Config', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Collection Banner', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Key Ingredients', lastSync: '2026-09-27', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Testimonial Group', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Preferences Quiz Categories', lastSync: '2026-09-27', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Preferences Quiz Questions', lastSync: '2026-09-27', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Preferences Quiz Why We Ask', lastSync: '2026-09-27', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Blog Filters', lastSync: '2026-09-27', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Product Comparison Group', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Testimonials', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Before & After', lastSync: '2026-09-21', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Product Group', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Metaobjects: Shop the LookSection Variants', lastSync: '2026-09-28', owner: 'Matrixify Auto Sync', category: 'Metaobjects' },
+      { component: 'Markets', lastSync: '2026-03-25', owner: 'Marc', category: 'Manual configuration' },
       { component: 'Apps', lastSync: 'manual', owner: '', category: 'Manual configuration' },
       { component: 'Shipping zones/rates', lastSync: 'manual', owner: '', category: 'Manual configuration' },
       { component: 'Store settings', lastSync: 'manual', owner: '', category: 'Manual configuration' },
@@ -155,35 +498,85 @@
     // END OF CONFIGURATION
     // ============================================================
 
+    const STATUS = {
+      fresh:  { label: 'Fresh',       color: '#C8F547', text: '#C8F547' },
+      old:    { label: 'Getting old', color: '#F5A524', text: '#F5A524' },
+      stale:  { label: 'Stale',       color: '#F2545B', text: '#F2545B' },
+      manual: { label: 'Manual',      color: '#6E6E6E', text: '#A3A3A3' },
+    };
+    const ORDER = ['fresh', 'old', 'stale', 'manual'];
+
+    const MAP = {
+      W: 1400, PITCH: 24, GROUP_GAP: 14, MIN_H: 680,
+      LEFT_W: 300, LEFT_H: 606, GLOBE: 220,
+      CARD_X: 336, CARD_W: 256, CARD_H: 80, CARD_GAP: 12,
+      ROW_BASE: 700, ROW_ARC: 50,
+      DETAIL_X: 1112, DETAIL_W: 288,
+    };
+    const LIST_MODE_BELOW = 980;
+    // Animations follow the computer's "Reduce motion" setting until the viewer uses the
+    // Animations button; that choice is then remembered in this browser.
+    const OS_REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const MOTION_KEY = 'testStoreSync.motion';
+    let motion = !OS_REDUCED;
+    try { const saved = localStorage.getItem(MOTION_KEY); if (saved === 'on') motion = true; if (saved === 'off') motion = false; } catch (e) { /* storage unavailable */ }
+    document.documentElement.classList.toggle('no-motion', !motion);
+
+    // ---------------- Helpers ----------------
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+    function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+    function pct(part, whole) { return whole ? Math.round(part / whole * 100) : 0; }
+
+    // ---------------- Data loading (same sheet format as before) ----------------
+    function parseCSVRows(text) {
+      const rows = [];
+      let row = [], field = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+          if (ch === '"') {
+            if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false;
+          } else field += ch;
+        } else if (ch === '"') inQuotes = true;
+        else if (ch === ',') { row.push(field); field = ''; }
+        else if (ch === '\n' || ch === '\r') {
+          if (ch === '\r' && text[i + 1] === '\n') i++;
+          row.push(field); rows.push(row); row = []; field = '';
+        } else field += ch;
+      }
+      if (field !== '' || row.length) { row.push(field); rows.push(row); }
+      return rows;
+    }
+
+    function normalizeDate(value) {
+      const v = (value || '').trim();
+      if (!v || v.toLowerCase() === 'manual') return 'manual';
+      const parsed = new Date(v.replace(/-/g, '/'));
+      if (isNaN(parsed.getTime())) return 'manual';
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, '0');
+      const d = String(parsed.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
     function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+      const rows = parseCSVRows(text.trim());
+      if (rows.length < 2) return null;
+      const headers = rows[0].map(h => h.trim().toLowerCase());
       const compIdx = headers.findIndex(h => h === 'component');
       const syncIdx = headers.findIndex(h => h.includes('last') && h.includes('sync'));
       const ownerIdx = headers.findIndex(h => h === 'owner');
       const catIdx = headers.findIndex(h => h === 'category');
       if (compIdx === -1 || syncIdx === -1) return null;
-
       const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      for (let i = 1; i < rows.length; i++) {
+        const cols = rows[i].map(c => (c || '').trim());
         const component = cols[compIdx];
         if (!component) continue;
-        let lastSync = cols[syncIdx] || 'manual';
-        if (lastSync !== 'manual') {
-          const parsed = new Date(lastSync.replace(/-/g, '/'));
-          if (!isNaN(parsed.getTime())) {
-            const y = parsed.getFullYear();
-            const m = String(parsed.getMonth() + 1).padStart(2, '0');
-            const d = String(parsed.getDate()).padStart(2, '0');
-            lastSync = `${y}-${m}-${d}`;
-          } else {
-            lastSync = 'manual';
-          }
-        }
         data.push({
           component,
-          lastSync,
+          lastSync: normalizeDate(cols[syncIdx]),
           owner: ownerIdx !== -1 ? (cols[ownerIdx] || '') : '',
           category: catIdx !== -1 ? (cols[catIdx] || '') : '',
         });
@@ -192,156 +585,925 @@
     }
 
     async function loadSyncData() {
-      if (!SHEET_CSV_URL) return { data: fallbackData, fromSheet: false };
+      if (!SHEET_CSV_URL) return { data: fallbackData, fromSheet: false, error: 'No Google Sheets URL is set' };
       try {
-        const r = await fetch(SHEET_CSV_URL);
+        const r = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const parsed = parseCSV(await r.text());
-        if (parsed) return { data: parsed, fromSheet: true };
-        return { data: fallbackData, fromSheet: false };
+        if (parsed) return { data: parsed, fromSheet: true, error: '' };
+        return { data: fallbackData, fromSheet: false, error: 'The sheet has no Component / Last Synced columns' };
       } catch (e) {
         console.warn('Google Sheets unreachable:', e.message);
-        return { data: fallbackData, fromSheet: false };
+        // "Failed to fetch" usually means the page is running somewhere without internet access
+        // (a sandboxed preview, for example) or the network blocks docs.google.com.
+        const why = location.protocol === 'file:'
+          ? 'Opened as a local file: browsers block reading the sheet from file://. Open the page from its web address.'
+          : `Could not reach Google Sheets (${e.message})`;
+        return { data: fallbackData, fromSheet: false, error: why };
       }
     }
 
-    async function init() {
-      const { data: syncData, fromSheet } = await loadSyncData();
+    // ---------------- Dates and status ----------------
+    function toLocalDate(ymd) { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); }
+    function daysSince(ymd) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return Math.max(0, Math.round((today - toLocalDate(ymd)) / 86400000));
+    }
+    function fmtDate(ymd, long) {
+      return toLocalDate(ymd).toLocaleDateString('en-US', { month: long ? 'long' : 'short', day: 'numeric', year: 'numeric' });
+    }
+    function freshnessScore(days, win) {
+      if (days <= 0) return 100;
+      if (days >= win.scaleMax) return 5;
+      return Math.max(5, 100 - (days / win.scaleMax) * 95);
+    }
+    function initials(name) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '';
+      return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    }
+    function ageText(it) {
+      if (it.undated) return 'Manual';
+      if (it.days === 0) return 'Today';
+      return plural(it.days, 'day', 'days');
+    }
+    function agoText(it) { return it.days === 0 ? 'today' : plural(it.days, 'day', 'days') + ' ago'; }
+    function catIcon(name) {
+      const n = norm(name);
+      const p = (d) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      if (n.includes('automat')) return p('<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>');
+      if (n.includes('cli')) return p('<path d="M4 17l6-5-6-5"/><path d="M12 19h8"/>');
+      if (n.includes('matrixify') || n.includes('import')) return p('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>');
+      if (n.includes('manual')) return p('<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>');
+      if (n.includes('metaobject')) return p('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>');
+      return p('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>');
+    }
+    function sheetPageUrl() {
+      return /\/pub\?/.test(SHEET_CSV_URL) ? SHEET_CSV_URL.replace(/\/pub\?.*$/, '/pubhtml') : '';
+    }
 
-      const sourceTag = document.getElementById('sourceTag');
-      sourceTag.textContent = fromSheet ? 'Live from Google Sheets' : 'Using local data';
-      if (!fromSheet) sourceTag.classList.add('fallback');
-
-      const today = new Date();
-
-      function daysSince(dateStr) {
-        if (dateStr === 'manual') return -1;
-        return Math.max(0, Math.floor((today - new Date(dateStr)) / 86400000));
-      }
-      function freshness(days) {
-        if (days < 0) return 15;
-        if (days <= 0) return 100;
-        if (days >= 90) return 5;
-        return Math.max(5, 100 - (days / 90) * 95);
-      }
-      function statusInfo(days, val) {
-        if (val === 'manual') return { label: 'Manual',      cls: 'status-na',    group: 'manual' };
-        if (days < 20)        return { label: 'Fresh',       cls: 'status-fresh', group: 'fresh' };
-        if (days <= 40)       return { label: 'Getting old', cls: 'status-ok',    group: 'old' };
-        return                       { label: 'Stale',       cls: 'status-stale', group: 'stale' };
-      }
-      function pointColor(days, val) {
-        if (val === 'manual') return '#B3BAC5';
-        if (days < 20)        return '#36B37E';
-        if (days <= 40)       return '#FFAB00';
-        return '#FF5630';
-      }
-
-      const items = syncData.map(d => {
-        const days = daysSince(d.lastSync);
-        const status = statusInfo(days, d.lastSync);
+    // ---------------- Model ----------------
+    function buildModel(data, fromSheet) {
+      const sixMonthSet = new Set(SIX_MONTH_COMPONENTS.map(n => norm(n).trim()));
+      const items = data.map((d, i) => {
+        const sixMonth = sixMonthSet.has(norm(d.component).trim());
+        const win = sixMonth ? WINDOWS.sixMonths : WINDOWS.standard;
+        const undated = d.lastSync === 'manual';
+        const days = undated ? -1 : daysSince(d.lastSync);
+        let status;
+        if (undated) status = sixMonth ? 'fresh' : 'manual';
+        else if (days < win.freshUnder) status = 'fresh';
+        else if (days <= win.staleAfter) status = 'old';
+        else status = 'stale';
+        const rawCat = (d.category || '').trim();
+        const category = COMPONENT_CATEGORY[d.component] || CATEGORY_RENAMES[rawCat] || rawCat || 'Uncategorized';
         const displayName = DISPLAY_NAMES[d.component] || d.component;
-        return { ...d, days, status, score: freshness(days), color: pointColor(days, d.lastSync), displayName };
+        return {
+          id: 'c' + i, component: d.component, displayName, lastSync: d.lastSync, owner: d.owner || '',
+          category, days, status, win, sixMonth, undated,
+          automated: !sixMonth && !undated,
+          score: undated ? (sixMonth ? 100 : 15) : Math.round(freshnessScore(days, win)),
+          search: norm([displayName, d.component, d.owner, category].join(' ')),
+        };
       });
-
-      // Summary
+      const cats = [];
+      const byName = {};
+      items.forEach(it => {
+        if (!byName[it.category]) { byName[it.category] = { name: it.category, items: [] }; cats.push(byName[it.category]); }
+        byName[it.category].items.push(it);
+      });
+      cats.forEach((c, ci) => {
+        c.index = ci;
+        c.counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
+        c.items.forEach(it => { it.catIndex = ci; c.counts[it.status]++; });
+      });
       const counts = { fresh: 0, old: 0, stale: 0, manual: 0 };
-      items.forEach(i => counts[i.status.group]++);
-      document.getElementById('summaryRow').innerHTML = `
-        <div class="summary-box"><div class="num num-fresh">${counts.fresh}</div><div class="label">Fresh</div></div>
-        <div class="summary-box"><div class="num num-old">${counts.old}</div><div class="label">Getting old</div></div>
-        <div class="summary-box"><div class="num num-stale">${counts.stale}</div><div class="label">Stale</div></div>
-        <div class="summary-box"><div class="num num-manual">${counts.manual}</div><div class="label">Manual</div></div>
-      `;
+      items.forEach(it => counts[it.status]++);
+      const total = items.length;
+      const dated = items.filter(it => !it.undated);
+      const mostRecent = dated.length ? dated.reduce((a, b) => (a.lastSync > b.lastSync ? a : b)).lastSync : null;
+      const ordered = [];
+      cats.forEach(c => c.items.forEach(it => ordered.push(it)));
+      const automated = items.filter(it => it.automated).length;
+      return {
+        items: ordered, cats, counts, total, fromSheet, mostRecent, automated,
+        inSync: pct(counts.fresh, total),
+        coverage: pct(automated, total),
+      };
+    }
 
-      // Most recent date
-      const syncDates = items.filter(i => i.lastSync !== 'manual').map(i => new Date(i.lastSync));
-      if (syncDates.length > 0) {
-        const mostRecent = new Date(Math.max(...syncDates));
-        document.getElementById('updatedTag').textContent = 'Most recent sync: ' + mostRecent.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
+    // ---------------- Shared pieces ----------------
+    function ringSegments(counts, total, cx, r, width, gap, delay) {
+      const C = 2 * Math.PI * r;
+      const present = ORDER.filter(k => counts[k] > 0);
+      const g = present.length > 1 ? gap : 0;
+      let acc = 0, out = `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#1C1C1C" stroke-width="${width}"/>`;
+      if (!total) return out;
+      ORDER.forEach(k => {
+        const n = counts[k];
+        if (!n) return;
+        const len = n / total * C;
+        const d = (delay + acc / C * 0.9).toFixed(2);
+        out += `<circle class="seg-in" cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${STATUS[k].color}" stroke-width="${width}" style="--C:${C.toFixed(2)};stroke-dasharray:${Math.max(0.01, len - g).toFixed(2)} ${C.toFixed(2)};stroke-dashoffset:${(-acc).toFixed(2)};animation-delay:${d}s" transform="rotate(-90 ${cx} ${cx})"/>`;
+        acc += len;
+      });
+      return out;
+    }
+
+    function sphereDots(R, litShare) {
+      let out = '', n = 0;
+      for (let lat = -72; lat <= 72; lat += 12) {
+        const cos = Math.cos(lat * Math.PI / 180);
+        const cnt = Math.max(5, Math.round(22 * cos));
+        for (let j = 0; j < cnt; j++) {
+          const lon = (360 * j / cnt + (lat / 12) * 7).toFixed(1);
+          const lit = ((n * 0.6180339887) % 1) < litShare;
+          const tw = lit && n % 3 === 0;
+          const o = lit ? 0.95 : (0.3 + 0.45 * cos).toFixed(2);
+          const cls = lit ? (tw ? ' class="lit tw"' : ' class="lit"') : '';
+          const delay = tw ? `animation-delay:${((n * 0.37) % 2.8).toFixed(2)}s;` : '';
+          out += `<i${cls} style="opacity:${o};${delay}transform:rotateY(${lon}deg) rotateX(${lat}deg) translateZ(${R}px)"></i>`;
+          n++;
+        }
       }
+      return out;
+    }
 
-      // Radar
-      const ctx = document.getElementById('radarChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: items.map(d => d.displayName),
-          datasets: [{
-            label: 'Sync freshness',
-            data: items.map(d => d.score),
-            fill: true,
-            backgroundColor: 'rgba(54, 179, 126, 0.12)',
-            borderColor: '#36B37E',
-            borderWidth: 2,
-            pointBackgroundColor: items.map(d => d.color),
-            pointBorderColor: items.map(d => d.color),
-            pointRadius: 5,
-            pointHoverRadius: 7,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          scales: {
-            r: {
-              min: 0, max: 100,
-              ticks: { stepSize: 25, display: false },
-              grid: { color: '#EBECF0', lineWidth: 0.8 },
-              angleLines: { color: '#EBECF0', lineWidth: 0.8 },
-              pointLabels: {
-                font: { size: 13, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
-                color: '#172B4D',
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function (context) {
-                  const item = items[context.dataIndex];
-                  if (item.lastSync === 'manual') return 'Manually configured';
-                  if (item.days === 0) return 'Synced today';
-                  if (item.days === 1) return '1 day ago';
-                  return item.days + ' days ago';
-                }
-              }
-            }
+    function globeHTML(model, size) {
+      const c = size / 2, r = c - 6, C = 2 * Math.PI * r;
+      const sweep = `<g class="sweep" style="transform-origin:${c}px ${c}px">
+          <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="6" stroke-dasharray="34 ${C.toFixed(1)}" stroke-dashoffset="30" transform="rotate(-90 ${c} ${c})"/>
+          <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#FFFFFF" stroke-opacity="0.85" stroke-width="6" stroke-dasharray="3 ${C.toFixed(1)}" transform="rotate(-90 ${c} ${c})"/>
+        </g>`;
+      return `<div class="globe" style="width:${size}px;height:${size}px" role="img" aria-label="Production, ${model.inSync}% of test-store in sync">
+        <span class="wave"></span><span class="wave" style="animation-delay:1.2s"></span><span class="wave" style="animation-delay:2.4s"></span>
+        <svg class="gring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">${ringSegments(model.counts, model.total, c, r, 6, 3, 0.2)}${sweep}</svg>
+        <div class="sphere-wrap" aria-hidden="true"><div class="sphere">${sphereDots(Math.round(size * 0.28), model.inSync / 100)}</div></div>
+      </div>`;
+    }
+
+    function headlineHTML(model) {
+      return `<div class="big"><span class="pct" data-count="${model.inSync}" data-key="inSync">${model.inSync}</span><span class="pc">%</span></div>
+        <div class="big-lab">of test-store in sync</div>
+        <div class="big-sub">${model.counts.fresh} of ${plural(model.total, 'component', 'components')} within their update window</div>`;
+    }
+
+    function legendHTML(model) {
+      const keys = ORDER.filter(k => model.counts[k] > 0 || k !== 'manual');
+      return `<div class="legend">${keys.map((k, i) => {
+        const span = keys.length % 2 === 1 && i === keys.length - 1 ? ' class="span2"' : '';
+        return `<div${span}><i style="background:${STATUS[k].color}"></i>${STATUS[k].label}<b data-count="${model.counts[k]}" data-key="n-${k}">${model.counts[k]}</b></div>`;
+      }).join('')}</div>`;
+    }
+
+    function coverageHTML(model) {
+      return `<div class="cover">
+        <div class="cover-top"><span>Covered by automated sync</span><b>${model.automated}/${model.total} · ${model.coverage}%</b></div>
+        <div class="cover-track"><i style="width:${model.coverage}%;animation:grow 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 0.4s backwards"></i></div>
+      </div>`;
+    }
+
+    function tickerHTML() {
+      return `<div class="ticker" hidden><span class="tk-lab"><i></i>Latest syncs</span><span class="tk-line"></span></div>`;
+    }
+
+    function catRingHTML(c, delay) {
+      const total = c.items.length;
+      const label = c.counts.manual === total ? '—' : pct(c.counts.fresh, total) + '%';
+      return `<span class="ring"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">${ringSegments(c.counts, total, 20, 16, 3, 1.5, delay)}</svg><span>${label}</span></span>`;
+    }
+
+    function badgeHTML(it) {
+      if (it.undated) return it.sixMonth ? `<span class="badge"><b>Manual</b></span>` : `<span class="badge">Manual</span>`;
+      if (it.days === 0) return `<span class="badge"><b>Today</b></span>`;
+      return `<span class="badge"><b>${it.days}</b>${it.days === 1 ? 'day' : 'days'}</span>`;
+    }
+
+    function meterHTML(it, i) {
+      const live = it.automated && it.status === 'fresh';
+      return `<span class="meter${live ? ' live' : ''}"${live ? ` style="--d:${((i * 0.41) % 3.2).toFixed(2)}s"` : ''}><i style="width:${it.score}%"></i></span>`;
+    }
+
+    function nextStepText(it) {
+      const w = it.win;
+      if (it.undated) {
+        return it.sixMonth
+          ? 'Counts as fresh for now. Add the date of the last manual check to the sheet to start its 6-month clock.'
+          : 'Configured by hand in test-store. Compare it with production whenever this area changes there.';
+      }
+      const act = it.sixMonth ? 'Review it against production' : 'Re-sync it';
+      if (it.status === 'fresh') return `Up to date. It starts getting old in ${plural(w.freshUnder - it.days, 'day', 'days')}.`;
+      if (it.status === 'old') return `${act} within ${plural(w.staleAfter + 1 - it.days, 'day', 'days')} to keep it from going stale.`;
+      return `Stale for ${plural(it.days - w.staleAfter, 'day', 'days')}. ${act}${it.sixMonth ? '.' : ' from production.'}`;
+    }
+
+    function timelineHTML(it) {
+      if (it.undated) {
+        return it.sixMonth
+          ? `<p>No check date in the sheet yet, so it counts as fresh for now. Once a date is added it goes stale after ${it.win.staleAfter} days (6 months).</p>`
+          : `<p>This area is set up by hand, so it has no sync date.</p>`;
+      }
+      const w = it.win;
+      const w1 = w.freshUnder / w.scaleMax * 100, w2 = (w.staleAfter - w.freshUnder) / w.scaleMax * 100;
+      const pos = Math.min(it.days, w.scaleMax) / w.scaleMax * 100;
+      return `<div class="tl-track">
+          <span class="z" style="left:0;width:${w1.toFixed(2)}%;background:rgba(200,245,71,.32);border-radius:4px 0 0 4px"></span>
+          <span class="z" style="left:${w1.toFixed(2)}%;width:${w2.toFixed(2)}%;background:rgba(245,165,36,.32)"></span>
+          <span class="z" style="left:${(w1 + w2).toFixed(2)}%;right:0;background:rgba(242,84,91,.32);border-radius:0 4px 4px 0"></span>
+          <span class="mk" style="left:${pos.toFixed(1)}%"></span>
+        </div>
+        <div class="tl-lab"><span style="left:0">0</span><span style="left:${w1.toFixed(2)}%;transform:translateX(-50%)">${w.freshUnder}</span><span style="left:${(w1 + w2).toFixed(2)}%;transform:translateX(-50%)">${w.staleAfter}</span><span style="right:0">${w.scaleMax}+ days</span></div>`;
+    }
+
+    function detailHTML(it, model, compact) {
+      if (!it) return `<div class="cap">Component</div><p class="empty-msg">Pick a component to see when it was last synced.</p>`;
+      const st = STATUS[it.status];
+      const cat = model.cats[it.catIndex];
+      const catTotal = cat.items.length;
+      const head = compact ? '' : `<div class="sec" style="gap:8px">
+          <div class="cap">Component</div>
+          <div class="d-name">${esc(it.displayName)}</div>
+          ${it.displayName !== it.component ? `<div class="d-full">${esc(it.component)}</div>` : ''}
+        </div>`;
+      const last = it.undated
+        ? `<strong>No date yet<em>${it.sixMonth ? 'manual check' : 'manual setup'}</em></strong>`
+        : `<strong>${fmtDate(it.lastSync)}<em>${agoText(it)}</em></strong>`;
+      const mix = ORDER.filter(k => cat.counts[k] > 0).map(k => `<i style="flex:${cat.counts[k]};background:${STATUS[k].color}"></i>`).join('');
+      const mixLab = ORDER.filter(k => cat.counts[k] > 0).map(k => `<span>${STATUS[k].label} <b>${cat.counts[k]}</b></span>`).join('');
+      const link = !compact && sheetPageUrl()
+        ? `<a class="d-link" href="${esc(sheetPageUrl())}" target="_blank" rel="noopener">Open sync sheet<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>`
+        : '';
+      return `${head}
+        <div class="chips">
+          <span class="chip">${esc(it.category)}</span>
+          <span class="chip"><i style="background:${st.color}"></i><span style="color:${st.text}">${st.label}</span></span>
+          ${it.sixMonth ? '<span class="chip">6-month window</span>' : ''}
+        </div>
+        <div class="stats">
+          <div class="wide"><span>Last synced</span>${last}</div>
+          <div><span>Owner</span><strong>${it.owner ? esc(it.owner) : '<span style="font-size:15px;color:#8A8A8A">Unassigned</span>'}</strong></div>
+          <div><span>Freshness</span><strong>${it.score}%</strong></div>
+        </div>
+        <div class="sec"><div class="sec-t">Sync age</div>${timelineHTML(it)}</div>
+        <div class="sec"><div class="sec-t">Next step</div><p>${nextStepText(it)}</p></div>
+        <div class="sec"><div class="sec-t">${esc(it.category)} · ${plural(catTotal, 'component', 'components')}</div><div class="mix">${mix}</div><div class="mix-lab">${mixLab}</div></div>
+        ${link}`;
+    }
+
+    // ---------------- App state ----------------
+    const host = document.getElementById('host');
+    const filtersEl = document.getElementById('filters');
+    const qEl = document.getElementById('q');
+    const state = { cat: null, filter: 'all', q: '', hover: null, sel: null, open: null, savOpen: false };
+    let model = null, mode = null, mapGeo = null;
+    let lastLoaded = 0, dataSig = '', refreshTimer = null, tickerTimer = null;
+    const prevCounts = {};
+
+    function matches(it) {
+      if (state.filter !== 'all' && it.status !== state.filter) return false;
+      if (state.cat !== null && it.catIndex !== state.cat) return false;
+      const nq = norm(state.q).trim();
+      if (nq && !it.search.includes(nq)) return false;
+      return true;
+    }
+    const byId = id => (model ? model.items.find(it => it.id === id) : null) || null;
+
+    function renderHeader() {
+      const sub = document.getElementById('subline');
+      const recent = model.mostRecent ? `Most recent sync: ${fmtDate(model.mostRecent, true)}` : 'No synced components yet';
+      sub.innerHTML = `<span>${plural(model.total, 'component', 'components')} · ${plural(model.cats.length, 'category', 'categories')}</span><span>${recent}</span>` +
+        (model.fromSheet
+          ? `<span class="source live">Live from Google Sheets</span>`
+          : `<span class="source local" title="${esc(model.error)}">Using local data</span><span class="ago">${esc(model.error)}</span>`) +
+        `<span class="ago" id="ago"></span>`;
+      if (state.filter === 'manual' && !model.counts.manual) state.filter = 'all';
+      const keys = ORDER.filter(k => k !== 'manual' || model.counts.manual > 0);
+      const opts = [['all', 'All', null]].concat(keys.map(k => [k, STATUS[k].label, STATUS[k].color]));
+      filtersEl.innerHTML = opts.map(([k, label, color]) => {
+        const n = k === 'all' ? model.total : model.counts[k];
+        return `<button type="button" data-filter="${k}" aria-pressed="${state.filter === k}">${color ? `<span class="dot" style="background:${color}"></span>` : ''}<span>${label}</span><span class="n">${n}</span></button>`;
+      }).join('');
+      const s = WINDOWS.standard, l = WINDOWS.sixMonths;
+      let foot = `<span><i style="background:var(--fresh)"></i>Fresh: synced 0 to ${s.freshUnder - 1} days ago</span>
+        <span><i style="background:var(--old)"></i>Getting old: ${s.freshUnder} to ${s.staleAfter} days</span>
+        <span><i style="background:var(--stale)"></i>Stale: more than ${s.staleAfter} days</span>`;
+      if (SIX_MONTH_COMPONENTS.length) foot += `<span><i class="dash"></i>${esc(SIX_MONTH_COMPONENTS.join(', '))}: getting old after ${l.freshUnder} days, stale after ${l.staleAfter} (6 months)</span>`;
+      if (model.counts.manual) foot += `<span><i style="background:var(--manual)"></i>Manual: configured by hand, not synced</span>`;
+      document.getElementById('foot').innerHTML = foot;
+      updateAgo();
+    }
+
+    function updateAgo() {
+      const el = document.getElementById('ago');
+      if (!el || !lastLoaded) return;
+      const s = Math.max(0, Math.round((Date.now() - lastLoaded) / 1000));
+      el.textContent = s < 5 ? 'updated just now' : s < 60 ? `updated ${s}s ago` : `updated ${Math.floor(s / 60)} min ago`;
+    }
+
+
+    // ---------------- Automation savings ----------------
+    const SAV_COLORS = ['#C8F547', '#A6D63B', '#86B530', '#689027', '#4C6B1D'];
+
+    function computeSavings(m) {
+      const S = AUTOMATION_SAVINGS;
+      const owner = norm(S.automationOwner).trim();
+      const auto = m.items.filter(it => owner && norm(it.owner).includes(owner) && it.status !== 'stale');
+      const deps = (S.fileDependentComponents || []).map(x => norm(x).trim()).filter(Boolean);
+      const fileDep = auto.filter(it => deps.some(d => norm(it.component).trim().startsWith(d)));
+      const factors = [
+        { label: 'Export and import by hand', detail: 'Run the export in production, download the file and import it into test-store, one component at a time.',
+          qty: auto.length, what: ['component', 'components'], min: S.minutesPerComponent, fromSheet: true },
+        { label: 'Scripts written by hand', detail: 'Scripts to clean and reshape the exported files before they can be imported.',
+          qty: S.scriptsPerRun, what: ['script', 'scripts'], min: S.minutesPerScript },
+        { label: 'Import and export errors to check', detail: 'Failed rows and files that someone has to open, read and retry.',
+          qty: S.importExportErrorsPerRun, what: ['error', 'errors'], min: S.minutesPerError },
+        { label: 'Errors that need a fix', detail: 'Errors that only go away after someone corrects the data.',
+          qty: S.errorsNeedingFixPerRun, what: ['error', 'errors'], min: S.minutesPerFix },
+        { label: 'Imports that need files first', detail: 'Metaobjects, metafields and other content that point to files. The automation uploads the CDN media before importing them, so they do not fail on missing files.',
+          qty: fileDep.length, what: ['import', 'imports'], min: S.minutesPerFileDependency, fromSheet: true },
+      ];
+      factors.forEach(f => { f.total = (Number(f.qty) || 0) * (Number(f.min) || 0); });
+      const perRunMin = factors.reduce((a, f) => a + f.total, 0);
+      const perRunH = perRunMin / 60;
+      const runs = Number(S.runsPerMonth) || 0;
+      return { auto, fileDep, factors, perRunMin, perRunH, runs, monthH: perRunH * runs, yearH: perRunH * runs * 12 };
+    }
+
+    function fmtHours(h) { return h >= 10 ? String(Math.round(h)) : String(Math.round(h * 10) / 10); }
+
+    function renderSavings() {
+      const box = document.getElementById('savings');
+      const sv = computeSavings(model);
+      if (!sv.auto.length || !sv.perRunMin) { box.hidden = true; box.innerHTML = ''; return; }
+      box.hidden = false;
+      const open = !!state.savOpen;
+      const monthly = Math.round(sv.monthH);
+      const items = sv.factors.map((f, i) => `
+        <div class="sav-item">
+          <span class="sw" style="background:${SAV_COLORS[i % SAV_COLORS.length]}"></span>
+          <div>
+            <div class="t">${f.label}</div>
+            <div class="d">${f.detail}</div>
+            <div class="f"><span>${f.qty} ${f.qty === 1 ? f.what[0] : f.what[1]} × ${f.min} min</span>${f.fromSheet
+              ? '<span class="tag sheet">count from the sheet</span><span class="tag est">time is an estimate</span>'
+              : '<span class="tag est">estimate</span>'}</div>
+          </div>
+          <div class="m">${f.total} min<span>${pct(f.total, sv.perRunMin)}% of a sync</span></div>
+        </div>`).join('');
+      const bar = sv.factors.map((f, i) => f.total ? `<i style="flex:${f.total};background:${SAV_COLORS[i % SAV_COLORS.length]};animation-delay:${(0.1 + i * 0.08).toFixed(2)}s"></i>` : '').join('');
+      box.innerHTML = `
+        <button type="button" class="sav-row" id="savBtn" aria-expanded="${open}" aria-controls="savPanel">
+          <span class="sav-ico" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg></span>
+          <span class="sav-main">
+            <span class="sav-num">≈ <span data-count="${monthly}" data-key="savMonth">${monthly}</span><small>h</small></span>
+            <span class="sav-lab">of human work saved per month by the automation</span>
+          </span>
+          <span class="sav-meta">≈ ${fmtHours(sv.perRunH)} h per sync · ${plural(sv.auto.length, 'component', 'components')} on automation</span>
+          <span class="sav-more">How it's calculated<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="sav-panel" id="savPanel"${open ? '' : ' hidden'}>
+          <div>
+            <div class="sav-h">Work one manual sync would take</div>
+            ${items}
+          </div>
+          <div class="sav-sum">
+            <div class="sav-bar" aria-hidden="true">${bar}</div>
+            <div class="sum-row"><span>One manual sync</span><b>${sv.perRunMin} min ≈ ${fmtHours(sv.perRunH)} h</b></div>
+            <div class="sum-row"><span>Manual syncs per month <span class="tag est">estimate</span></span><b>× ${sv.runs}</b></div>
+            <div class="sum-row total"><span>Saved per month</span><b>≈ ${fmtHours(sv.monthH)} h</b></div>
+            <div class="sum-row"><span>Saved per year</span><b>≈ ${fmtHours(sv.yearH)} h</b></div>
+            <p class="sav-note">Counted from the sheet: ${plural(sv.auto.length, 'component', 'components')} whose owner is “${esc(AUTOMATION_SAVINGS.automationOwner)}” and that are not stale, ${sv.fileDep.length} of them pointing to files. Every other number is an estimate set in <code>AUTOMATION_SAVINGS</code> at the top of this file.</p>
+          </div>
+        </div>`;
+      countUp(box);
+    }
+
+    // ---------------- Map mode ----------------
+    function buildMap() {
+      const M = MAP;
+      const rows = [];
+      let y = 0;
+      model.cats.forEach((c, gi) => {
+        const start = y;
+        c.items.forEach(it => { rows.push({ it, y: y + M.PITCH / 2 }); y += M.PITCH; });
+        c.span = [start, y];
+        if (gi < model.cats.length - 1) y += M.GROUP_GAP;
+      });
+      const listH = y;
+      const H = Math.max(M.MIN_H, listH + 124, M.LEFT_H + 48, model.cats.length * (M.CARD_H + M.CARD_GAP) + 48);
+      const listTop = (H - listH) / 2 + 22;   // leaves room for the "test-store" heading above the list
+      const listMid = listTop + listH / 2;
+      rows.forEach(r => { r.y += listTop; });
+
+      // Category cards sit next to their group of components, without overlapping.
+      const pitch = M.CARD_H + M.CARD_GAP, minC = 24 + M.CARD_H / 2, maxC = H - 24 - M.CARD_H / 2;
+      let pos = model.cats.map(c => listTop + (c.span[0] + c.span[1]) / 2);
+      for (let i = 1; i < pos.length; i++) pos[i] = Math.max(pos[i], pos[i - 1] + pitch);
+      if (pos.length && pos[pos.length - 1] > maxC) pos[pos.length - 1] = maxC;
+      for (let i = pos.length - 2; i >= 0; i--) pos[i] = Math.min(pos[i], pos[i + 1] - pitch);
+      if (pos.length && pos[0] < minC) { const d = minC - pos[0]; pos = pos.map(p => p + d); }
+
+      const leftTop = Math.round((H - M.LEFT_H) / 2);
+      const sx = M.LEFT_W / 2 + M.GLOBE / 2 + 4;
+      const sy = leftTop + 40 + M.GLOBE / 2;
+      const cardR = M.CARD_X + M.CARD_W;
+      const f = v => Math.round(v * 10) / 10;
+      const sphereLine = cy => { const cx = (sx + M.CARD_X) / 2; return `M${sx} ${f(sy)} C${f(cx)} ${f(sy)} ${f(cx)} ${f(cy)} ${M.CARD_X - 4} ${f(cy)}`; };
+
+      let svg = '';
+      pos.forEach((cy, i) => { svg += `<path class="sl" data-cat="${i}" d="${sphereLine(cy)}"/>`; });
+      const rowGeo = {};
+      rows.forEach(r => {
+        const it = r.it;
+        const t = Math.max(-1, Math.min(1, (r.y - listMid) / (listH / 2 || 1)));
+        const dotX = M.ROW_BASE + M.ROW_ARC * (1 - t * t);
+        const cy = pos[it.catIndex];
+        const x0 = cardR + 4, x1 = dotX - 7, dx = x1 - x0;
+        const curve = `C${f(x0 + dx * 0.28)} ${f(cy)} ${f(x0 + dx * 0.38)} ${f(r.y)} ${f(x1)} ${f(r.y)}`;
+        const d = `M${x0} ${f(cy)} ${curve}`;
+        const color = STATUS[it.status].color;
+        svg += `<path class="ln" data-id="${it.id}" d="${d}" stroke="${color}"${it.automated ? '' : ' stroke-dasharray="2 4"'}/>`;
+        rowGeo[it.id] = { x: dotX, y: r.y };
+      });
+      svg += `<circle class="node" cx="${sx}" cy="${f(sy)}" r="2.5" style="fill:#D9D9D9"/>`;
+      pos.forEach((cy, i) => { svg += `<circle class="node" data-cat="${i}" cx="${cardR + 4}" cy="${f(cy)}" r="3"/>`; });
+
+      const cards = model.cats.map((c, i) => `
+        <button type="button" class="cat" data-cat="${i}" aria-pressed="false" style="left:${M.CARD_X}px;top:${f(pos[i] - M.CARD_H / 2)}px" aria-label="${esc(c.name)}: ${c.items.length} components, ${pct(c.counts.fresh, c.items.length)}% fresh">
+          <span class="cat-main">
+            <span class="cat-top"><span class="ico">${catIcon(c.name)}</span><span class="cat-lab" title="${esc(c.name)}">${esc(c.name)}</span></span>
+            <span class="cat-bot"><span class="cat-cnt" data-count="${c.items.length}" data-key="cat-${esc(c.name)}">${c.items.length}</span><span class="cat-unit">${c.items.length === 1 ? 'component' : 'components'}</span></span>
+          </span>
+          ${catRingHTML(c, 0.3 + i * 0.1)}
+        </button>`).join('');
+
+      const rowsHTML = rows.map((r, i) => {
+        const it = r.it, g = rowGeo[it.id], st = STATUS[it.status];
+        const when = it.undated ? 'no date yet, configured manually' : ageText(it) + (it.days === 0 ? '' : ' ago');
+        const label = `${it.displayName}, ${st.label}, ${when}, owner ${it.owner || 'unassigned'}`;
+        return `<button type="button" class="row" data-id="${it.id}" style="left:${f(g.x - 5)}px;top:${f(g.y - 11)}px;--c:${st.color}" title="${esc(it.component)}" aria-label="${esc(label)}">
+          <span class="pt"><i></i></span>
+          <span class="nm">${esc(it.displayName)}</span>
+          ${badgeHTML(it)}
+          ${meterHTML(it, i)}
+          <span class="av${it.owner ? '' : ' none'}" aria-hidden="true">${esc(initials(it.owner))}</span>
+        </button>`;
+      }).join('');
+
+      host.innerHTML = `<div class="fit" id="fit"><div class="stage" id="stage" style="height:${H}px">
+        <svg class="lines" width="${M.W}" height="${H}" viewBox="0 0 ${M.W} ${H}" aria-hidden="true">${svg}</svg>
+        <canvas class="flow-canvas" id="flowCanvas" aria-hidden="true" style="width:${M.W}px;height:${H}px"></canvas>
+        <div class="col-head" style="left:${M.ROW_BASE - 5}px;top:${f(listTop - 50)}px"><span class="lt1">test-store</span><span class="lt2">${plural(model.total, 'component', 'components')} receiving production data</span></div>
+        <div class="left" style="top:${leftTop}px">
+          <div class="left-title"><div class="lt1">production</div><div class="lt2">source of truth</div></div>
+          ${globeHTML(model, M.GLOBE)}
+          ${headlineHTML(model)}
+          ${legendHTML(model)}
+          ${coverageHTML(model)}
+          ${tickerHTML()}
+        </div>
+        ${cards}
+        ${rowsHTML}
+        <aside class="detail" id="detail" aria-live="polite" style="left:${M.DETAIL_X}px;top:0;width:${M.DETAIL_W}px;height:${H}px"></aside>
+      </div></div>`;
+      mapGeo = { H, globe: { x: M.LEFT_W / 2, y: sy }, node: { x: sx, y: sy }, cardR, pos };
+      scaleMap();
+    }
+
+    function scaleMap() {
+      const fit = document.getElementById('fit');
+      const stage = document.getElementById('stage');
+      if (!fit || !stage || !mapGeo) return;
+      const s = Math.min(1, host.clientWidth / MAP.W);
+      fit.style.width = MAP.W * s + 'px';
+      fit.style.height = mapGeo.H * s + 'px';
+      stage.style.transform = s < 1 ? `scale(${s})` : '';
+    }
+
+    function applyMap() {
+      const active = state.hover || state.sel;
+      host.querySelectorAll('.row').forEach(el => {
+        const it = byId(el.dataset.id);
+        el.classList.toggle('dim', !matches(it));
+        el.classList.toggle('hi', it.id === active);
+        el.classList.toggle('sel', it.id === state.sel);
+      });
+      const svg = host.querySelector('.lines');
+      let hiPath = null;
+      host.querySelectorAll('.ln, .fl').forEach(p => {
+        const it = byId(p.dataset.id);
+        p.classList.toggle('dim', !matches(it));
+        if (p.classList.contains('ln')) {
+          const on = it.id === active;
+          p.classList.toggle('hi', on);
+          if (on) hiPath = p;
+        }
+      });
+      if (hiPath && svg) svg.appendChild(hiPath);
+      host.querySelectorAll('.sl, .node[data-cat]').forEach(p => p.classList.toggle('on', state.cat !== null && Number(p.dataset.cat) === state.cat));
+      host.querySelectorAll('.cat').forEach(b => b.setAttribute('aria-pressed', String(state.cat !== null && Number(b.dataset.cat) === state.cat)));
+      const detail = document.getElementById('detail');
+      if (detail && detail.dataset.for !== String(state.sel)) {
+        detail.dataset.for = String(state.sel);
+        detail.innerHTML = detailHTML(byId(state.sel), model, false);
+      }
+    }
+
+    // ---------------- List mode (narrow screens) ----------------
+    function buildList() {
+      let i = 0;
+      const groups = model.cats.map((c, ci) => `
+        <section class="lm-group" data-cat="${ci}">
+          <div class="lm-gh"><span class="ico">${catIcon(c.name)}</span><span class="cat-lab">${esc(c.name)}</span><span class="cat-unit">${plural(c.items.length, 'component', 'components')}</span>${catRingHTML(c, 0.3 + ci * 0.1)}</div>
+          <div>${c.items.map(it => {
+            const st = STATUS[it.status];
+            return `<button type="button" class="lrow" data-id="${it.id}" aria-expanded="false" style="--c:${st.color}">
+                <span class="pt"><i></i></span>
+                <span class="nm">${esc(it.displayName)}</span>
+                ${badgeHTML(it)}
+                ${meterHTML(it, i++)}
+              </button>
+              <div class="lm-detail" data-detail="${it.id}" hidden></div>`;
+          }).join('')}</div>
+        </section>`).join('');
+      host.innerHTML = `<div class="lm">
+        <div class="lm-hero">
+          ${globeHTML(model, 168)}
+          <div class="hero-txt">${headlineHTML(model)}${legendHTML(model)}${coverageHTML(model)}${tickerHTML()}</div>
+        </div>
+        ${groups}
+        <p class="empty-msg lm-none" id="lmNone" hidden>No components match this filter.</p>
+      </div>`;
+      mapGeo = null;
+    }
+
+    function applyList() {
+      let visible = 0;
+      host.querySelectorAll('.lm-group').forEach(g => {
+        let n = 0;
+        g.querySelectorAll('.lrow').forEach(b => {
+          const it = byId(b.dataset.id);
+          const ok = matches(it);
+          b.hidden = !ok;
+          const open = ok && state.open === it.id;
+          b.setAttribute('aria-expanded', String(open));
+          const d = g.querySelector(`[data-detail="${it.id}"]`);
+          d.hidden = !open;
+          d.innerHTML = open ? detailHTML(it, model, true) : '';
+          if (ok) n++;
+        });
+        g.hidden = n === 0;
+        visible += n;
+      });
+      document.getElementById('lmNone').hidden = visible > 0;
+    }
+
+    // ---------------- Live motion ----------------
+    function countUp(root) {
+      root.querySelectorAll('[data-count]').forEach(el => {
+        const to = Number(el.dataset.count), key = el.dataset.key;
+        const from = key in prevCounts ? prevCounts[key] : 0;
+        prevCounts[key] = to;
+        if (!motion || from === to) { el.textContent = to; return; }
+        const t0 = performance.now(), dur = 1200;
+        el.textContent = from;
+        const step = now => {
+          const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+          el.textContent = Math.round(from + (to - from) * e);
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+    }
+
+    function drawIn(p, dur, delay) {
+      if (p.getAttribute('stroke-dasharray')) {
+        p.animate([{ opacity: 0, offset: 0 }], { duration: dur, delay, fill: 'backwards' });
+        return;
+      }
+      const L = p.getTotalLength();
+      p.style.strokeDasharray = L;
+      const a = p.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: dur, delay, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)', fill: 'backwards' });
+      a.onfinish = () => { p.style.strokeDasharray = ''; };
+    }
+
+    function introMap() {
+      if (!motion) return;
+      const stage = document.getElementById('stage');
+      stage.querySelectorAll('.sl').forEach((p, i) => drawIn(p, 650, 150 + i * 70));
+      stage.querySelectorAll('.ln').forEach((p, i) => drawIn(p, 750, 450 + i * 22));
+      stage.querySelectorAll('.cat').forEach((c, i) => c.animate([{ opacity: 0, transform: 'translateX(-10px)', offset: 0 }], { duration: 500, delay: 200 + i * 90, easing: 'ease-out', fill: 'backwards' }));
+      stage.querySelectorAll('.row').forEach((r, i) => r.animate([{ opacity: 0, transform: 'translateX(-8px)', offset: 0 }], { duration: 420, delay: 550 + i * 22, easing: 'ease-out', fill: 'backwards' }));
+      stage.querySelectorAll('.meter i').forEach((m, i) => m.animate([{ transform: 'scaleX(0)', offset: 0 }], { duration: 700, delay: 700 + i * 22, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)', fill: 'backwards' }));
+    }
+
+    function ping(id) {
+      const el = host.querySelector(`[data-id="${id}"] .pt`);
+      if (!el) return;
+      el.classList.remove('ping');
+      void el.offsetWidth;
+      el.classList.add('ping');
+    }
+
+    // Continuous stream: particles leave the production globe, pass through the
+    // sync method card and arrive at every automated test-store component.
+    const FLOW = { rate: 0.038, speedMin: 0.15, speedMax: 0.24, trail: 16, startDelay: 1300 };
+    let flowState = null;
+
+    function hexRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+
+    function samplePathEl(el, step, out) {
+      const L = el.getTotalLength();
+      const n = Math.max(2, Math.ceil(L / step));
+      for (let i = 0; i <= n; i++) { const q = el.getPointAtLength(L * i / n); out.push(q.x, q.y); }
+    }
+
+    function withLengths(pts) {
+      const n = pts.length / 2, cum = new Float32Array(n);
+      for (let i = 1; i < n; i++) cum[i] = cum[i - 1] + Math.hypot(pts[2 * i] - pts[2 * i - 2], pts[2 * i + 1] - pts[2 * i - 1]);
+      return { pts, cum, len: cum[n - 1] };
+    }
+
+    function pointAt(path, d, out) {
+      const cum = path.cum, pts = path.pts;
+      let lo = 0, hi = cum.length - 1;
+      if (d <= 0) { out[0] = pts[0]; out[1] = pts[1]; return out; }
+      if (d >= cum[hi]) { out[0] = pts[2 * hi]; out[1] = pts[2 * hi + 1]; return out; }
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+      const t = (d - cum[lo]) / ((cum[hi] - cum[lo]) || 1);
+      out[0] = pts[2 * lo] + (pts[2 * hi] - pts[2 * lo]) * t;
+      out[1] = pts[2 * lo + 1] + (pts[2 * hi + 1] - pts[2 * lo + 1]) * t;
+      return out;
+    }
+
+    function buildRoutes() {
+      const svg = host.querySelector('.lines');
+      const routes = [];
+      model.items.forEach(it => {
+        if (!it.automated) return;
+        const fan = svg.querySelector(`.ln[data-id="${it.id}"]`);
+        const sl = svg.querySelector(`.sl[data-cat="${it.catIndex}"]`);
+        if (!fan || !sl) return;
+        const pts = [];
+        samplePathEl(sl, 4, pts);   // production -> sync method card
+        samplePathEl(fan, 4, pts);  // card -> component (the jump between them runs hidden under the card)
+        const r = withLengths(pts);
+        r.id = it.id; r.rgb = hexRgb(STATUS[it.status].color);
+        routes.push(r);
+      });
+      return routes;
+    }
+
+    function emitPrefix(fs) {
+      // Starts somewhere inside the globe and curves into the outgoing node.
+      const g = mapGeo.globe, n = mapGeo.node;
+      const phi = (Math.random() * 2 - 1) * 1.45, rad = 10 + Math.random() * 52;
+      const sx = g.x + Math.cos(phi) * rad, sy = g.y + Math.sin(phi) * rad;
+      const c1x = sx + 28, c1y = sy, c2x = n.x - 34, c2y = n.y;
+      const pts = [];
+      for (let i = 0; i <= 14; i++) {
+        const t = i / 14, u = 1 - t;
+        pts.push(u * u * u * sx + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t * t * t * n.x,
+                 u * u * u * sy + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t * t * t * n.y);
+      }
+      return withLengths(pts);
+    }
+
+    function pickRoute(fs) {
+      const active = state.hover;
+      let total = 0;
+      const w = fs.weights;
+      fs.routes.forEach((r, i) => {
+        const it = byId(r.id);
+        let v = 0;
+        if (it && matches(it)) {
+          v = it.status === 'fresh' ? 3 : it.status === 'old' ? 1.4 : 0.5;
+          if (it.id === active) v += 5;
+        }
+        w[i] = v; total += v;
+      });
+      if (!total) return null;
+      let x = Math.random() * total;
+      for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return fs.routes[i]; }
+      return fs.routes[fs.routes.length - 1];
+    }
+
+    function flowFrame(now) {
+      const fs = flowState;
+      if (!fs) return;
+      fs.raf = requestAnimationFrame(flowFrame);
+      const dt = Math.min(50, now - (fs.last || now));
+      fs.last = now;
+      if (now >= fs.startAt) {
+        fs.acc += dt * FLOW.rate;
+        while (fs.acc >= 1) {
+          fs.acc -= 1;
+          const r = pickRoute(fs);
+          if (r) {
+            const pre = emitPrefix(fs);
+            fs.parts.push({ r, pre, d: 0, total: pre.len + r.len, speed: FLOW.speedMin + Math.random() * (FLOW.speedMax - FLOW.speedMin), size: 1.1 + Math.random() * 0.9, alpha: 0.65 + Math.random() * 0.35 });
           }
         }
-      });
-
-      // Table
-      const tbody = document.getElementById('tableBody');
-      let lastCat = '';
-      items.forEach(item => {
-        if (item.category && item.category !== lastCat) {
-          lastCat = item.category;
-          const r = document.createElement('tr');
-          r.innerHTML = `<td colspan="4" class="category-label">${item.category}</td>`;
-          tbody.appendChild(r);
+      }
+      const ctx = fs.ctx, H = fs.h, T = fs.tmpA, U = fs.tmpB;
+      ctx.clearRect(0, 0, fs.w, H);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (let i = fs.parts.length - 1; i >= 0; i--) {
+        const p = fs.parts[i];
+        p.d += p.speed * dt;
+        if (p.d >= p.total) {
+          fs.parts.splice(i, 1);
+          if (!fs.pinged[p.r.id] || now - fs.pinged[p.r.id] > 1100) { fs.pinged[p.r.id] = now; ping(p.r.id); }
+          continue;
         }
-        let dateCell;
-        if (item.lastSync === 'manual') {
-          dateCell = '<span style="color:#97A0AF">Configure manually</span>';
-        } else {
-          const ds = new Date(item.lastSync).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
-          const dt = item.days === 0 ? 'Today' : item.days === 1 ? '1 day ago' : item.days + ' days ago';
-          dateCell = `${ds} <span class="days-ago">(${dt})</span>`;
-        }
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong title="${item.component}">${item.displayName}</strong></td>
-          <td>${dateCell}</td>
-          <td><span class="status-pill ${item.status.cls}">${item.status.label}</span></td>
-          <td class="owner">${item.owner || '<span style="color:#C1C7D0">Unassigned</span>'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+        const at = d => (d <= p.pre.len ? pointAt(p.pre, d, d === p.d ? T : U) : pointAt(p.r, d - p.pre.len, d === p.d ? T : U));
+        const head = at(p.d), tail = at(Math.max(0, p.d - FLOW.trail));
+        const a = Math.min(1, p.d / 36) * Math.min(1, (p.total - p.d) / 16) * p.alpha;
+        const c = p.r.rgb;
+        ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${(0.4 * a).toFixed(3)})`;
+        ctx.lineWidth = p.size;
+        ctx.beginPath(); ctx.moveTo(tail[0], tail[1]); ctx.lineTo(head[0], head[1]); ctx.stroke();
+        ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${(0.13 * a).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(head[0], head[1], p.size * 2.8, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${(0.95 * a).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(head[0], head[1], p.size * 0.85, 0, 6.2832); ctx.fill();
+      }
     }
 
-    init();
+    function stopFlow() {
+      if (flowState) cancelAnimationFrame(flowState.raf);
+      flowState = null;
+    }
+
+    function startFlow() {
+      stopFlow();
+      if (!motion || mode !== 'map' || !mapGeo) return;
+      const canvas = document.getElementById('flowCanvas');
+      if (!canvas || !canvas.getContext) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(MAP.W * dpr);
+      canvas.height = Math.round(mapGeo.H * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const routes = buildRoutes();
+      if (!routes.length) return;
+      flowState = {
+        ctx, w: MAP.W, h: mapGeo.H, routes, weights: new Array(routes.length).fill(0),
+        parts: [], acc: 0, last: 0, pinged: {}, tmpA: [0, 0], tmpB: [0, 0],
+        startAt: performance.now() + FLOW.startDelay, raf: 0,
+      };
+      flowState.raf = requestAnimationFrame(flowFrame);
+    }
+
+    function startTicker() {
+      clearInterval(tickerTimer);
+      const recent = model.items.filter(it => it.automated).sort((a, b) => a.days - b.days).slice(0, 6);
+      const boxes = host.querySelectorAll('.ticker');
+      boxes.forEach(b => { b.hidden = !recent.length; });
+      if (!recent.length) return;
+      const text = it => `<b>${esc(it.displayName)}</b><span>${agoText(it)}</span>`;
+      let idx = 0;
+      host.querySelectorAll('.tk-line').forEach(el => { el.innerHTML = text(recent[0]); });
+      if (!motion || recent.length < 2) return;
+      tickerTimer = setInterval(() => {
+        if (document.hidden) return;
+        idx = (idx + 1) % recent.length;
+        host.querySelectorAll('.tk-line').forEach(el => {
+          const out = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 220, easing: 'ease-in', fill: 'forwards' });
+          out.onfinish = () => {
+            el.innerHTML = text(recent[idx]);
+            el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'ease-out', fill: 'backwards' });
+            out.cancel();
+            ping(recent[idx].id);
+          };
+        });
+      }, 3400);
+    }
+
+    function restartLiveBar() {
+      const bar = document.getElementById('liveBar');
+      if (!bar) return;
+      bar.style.animation = 'none';
+      void bar.offsetWidth;
+      if (AUTO_REFRESH_MINUTES <= 0) { bar.style.transform = 'scaleX(0)'; return; }
+      if (!motion) { bar.style.transform = 'scaleX(1)'; return; }
+      bar.style.transform = '';
+      bar.style.animation = `liveBar ${AUTO_REFRESH_MINUTES * 60}s linear forwards`;
+    }
+
+    function renderMotionBtn() {
+      const b = document.getElementById('motionBtn');
+      b.setAttribute('aria-pressed', String(motion));
+      document.getElementById('motionTxt').textContent = motion ? 'Animations on' : 'Animations off';
+      b.setAttribute('aria-label', motion ? 'Animations on' : 'Animations off');
+    }
+
+    // ---------------- Render orchestration ----------------
+    function apply() {
+      if (!model) return;
+      filtersEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === state.filter)));
+      if (mode === 'map') applyMap(); else applyList();
+    }
+
+    function layout(force) {
+      if (!model) return;
+      const next = host.clientWidth >= LIST_MODE_BELOW ? 'map' : 'list';
+      if (force || next !== mode) {
+        mode = next;
+        if (mode === 'map') buildMap(); else buildList();
+        apply();
+        countUp(host);
+        if (mode === 'map') introMap();
+        startTicker();
+        if (mode === 'map') startFlow(); else stopFlow();
+      } else if (mode === 'map') scaleMap();
+    }
+
+    function pickDefault() {
+      const dated = model.items.filter(it => it.automated);
+      if (!dated.length) return model.items.length ? model.items[0].id : null;
+      return dated.reduce((a, b) => (b.days > a.days ? b : a)).id;
+    }
+
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      restartLiveBar();
+      if (AUTO_REFRESH_MINUTES > 0) refreshTimer = setTimeout(() => init(true, true), AUTO_REFRESH_MINUTES * 60000);
+    }
+
+    async function init(isRefresh, silent) {
+      const btn = document.getElementById('refreshBtn');
+      const txt = document.getElementById('refreshTxt');
+      btn.disabled = true; txt.textContent = isRefresh ? 'Refreshing…' : 'Loading…';
+      const { data, fromSheet, error } = await loadSyncData();
+      lastLoaded = Date.now();
+      btn.disabled = false; txt.textContent = 'Refresh';
+      const sig = JSON.stringify(data) + '|' + fromSheet + '|' + error + '|' + new Date().toDateString();
+      if (silent && sig === dataSig) { updateAgo(); scheduleRefresh(); return; }
+      dataSig = sig;
+      const prev = model ? new Map(model.items.map(it => [it.component, it.lastSync])) : null;
+      const keepSel = model && state.sel ? (byId(state.sel) || {}).component : null;
+      model = buildModel(data, fromSheet);
+      model.error = error;
+      const again = keepSel && model.items.find(it => it.component === keepSel);
+      state.sel = again ? again.id : pickDefault();
+      state.hover = null; state.open = null;
+      if (state.cat !== null && state.cat >= model.cats.length) state.cat = null;
+      renderHeader();
+      renderSavings();
+      layout(true);
+      if (prev) {
+        const changed = model.items.filter(it => prev.has(it.component) && prev.get(it.component) !== it.lastSync);
+        setTimeout(() => changed.forEach(it => ping(it.id)), 1600);
+      }
+      scheduleRefresh();
+    }
+
+    // ---------------- Events ----------------
+    host.addEventListener('click', e => {
+      const row = e.target.closest('.row');
+      if (row) { state.sel = row.dataset.id; apply(); return; }
+      const cat = e.target.closest('.cat');
+      if (cat) { const i = Number(cat.dataset.cat); state.cat = state.cat === i ? null : i; apply(); return; }
+      const lrow = e.target.closest('.lrow');
+      if (lrow) { state.open = state.open === lrow.dataset.id ? null : lrow.dataset.id; apply(); }
+    });
+    const setHover = id => { if (state.hover !== id) { state.hover = id; if (mode === 'map') applyMap(); } };
+    host.addEventListener('mouseover', e => { const row = e.target.closest('.row'); if (row) setHover(row.dataset.id); });
+    host.addEventListener('mouseout', e => {
+      const row = e.target.closest('.row');
+      if (row && !row.contains(e.relatedTarget)) setHover(null);
+    });
+    host.addEventListener('focusin', e => { const row = e.target.closest('.row'); if (row) setHover(row.dataset.id); });
+    host.addEventListener('focusout', e => { if (e.target.closest('.row')) setHover(null); });
+    filtersEl.addEventListener('click', e => {
+      const b = e.target.closest('button[data-filter]');
+      if (b) { state.filter = b.dataset.filter; apply(); }
+    });
+    qEl.addEventListener('input', () => { state.q = qEl.value; apply(); });
+    document.getElementById('savings').addEventListener('click', e => {
+      if (!e.target.closest('#savBtn')) return;
+      state.savOpen = !state.savOpen;
+      document.getElementById('savBtn').setAttribute('aria-expanded', String(state.savOpen));
+      document.getElementById('savPanel').hidden = !state.savOpen;
+    });
+    document.getElementById('refreshBtn').addEventListener('click', () => init(true, false));
+    document.getElementById('motionBtn').addEventListener('click', () => {
+      motion = !motion;
+      try { localStorage.setItem(MOTION_KEY, motion ? 'on' : 'off'); } catch (e) { /* storage unavailable */ }
+      document.documentElement.classList.toggle('no-motion', !motion);
+      renderMotionBtn();
+      if (!motion) { stopFlow(); clearInterval(tickerTimer); }
+      layout(true);
+      scheduleRefresh();
+    });
+    renderMotionBtn();
+    new ResizeObserver(() => layout(false)).observe(host);
+    setInterval(updateAgo, 1000);
+
+    init(false, false);
   </script>
 </body>
 
